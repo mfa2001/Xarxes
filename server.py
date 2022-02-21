@@ -1,19 +1,30 @@
-#Client File
-import sys
+# Server File
+class ConfigFile:
+    def __init__(self, ID, udpPort, tcpPort) -> None:
+        # Diferent Config statments
+        self.id = ID
+        self.UDP_port = udpPort
+        self.TCP_port = tcpPort
 
-class ConfigFile():
-    def __init__(self) -> None:
-        #Diferent Config statments
-        pass
 
+def read(serverFile):
+    config_file = open(serverFile, "r")
+    # Read operation from file
+    for line in config_file:
+        try:
+            operator = line.split()
+            if operator[0] == "Id":
+                ID = operator[2]
+            if operator[0] == "UDP-port":
+                UDP_port = operator[2]
+            if operator[0] == "TCP-port":
+                TCP_port = operator[2]
+        except:
+            pass
 
-def read(file):
-    for line in file:
-        
-    #Read operation from file
-    configuration = ConfigFile("Add diferent config statments")
-    pass
+    return ConfigFile(ID, UDP_port, TCP_port)
+
 
 if __name__ == "__main__":
     file = "server.cfg"
-    read(file)
+    configServer = read(file)
