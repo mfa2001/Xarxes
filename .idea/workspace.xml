@@ -15,7 +15,6 @@
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/client.c" beforeDir="false" afterPath="$PROJECT_DIR$/client/client.c" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/client/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/client/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -25,7 +24,6 @@
   <component name="ClangdSettings">
     <option name="formatViaClangd" value="false" />
   </component>
-  <component name="ExecutionTargetManager" SELECTED_TARGET="CMakeBuildProfile:Debug" />
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
@@ -63,7 +61,7 @@
     <property name="cmake.loaded.for.project" value="true" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$/client/CMakeLists.txt" />
     <property name="nodejs_package_manager_path" value="npm" />
-    <property name="settings.editor.selected.configurable" value="CPPToolchains" />
+    <property name="settings.editor.selected.configurable" value="configurable.group.appearance" />
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
@@ -72,7 +70,7 @@
       <recent name="C:\Users\mfarr\Desktop\Universidad\Xarxes\client" />
     </key>
   </component>
-  <component name="RunManager" selected="CMake Application.client">
+  <component name="RunManager" selected="Python.server">
     <configuration name="client" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-d" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Xarxes" TARGET_NAME="Xarxes" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Xarxes" RUN_TARGET_NAME="Xarxes">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -130,6 +128,10 @@
       <workItem from="1645633870140" duration="526000" />
       <workItem from="1645634478299" duration="19000" />
       <workItem from="1645635053601" duration="816000" />
+      <workItem from="1645636166257" duration="719000" />
+      <workItem from="1645638765460" duration="3000" />
+      <workItem from="1645649495574" duration="11000" />
+      <workItem from="1645649581268" duration="62000" />
     </task>
     <servers />
   </component>
