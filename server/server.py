@@ -1,4 +1,5 @@
 # Server File
+import sys
 class ConfigFile:
     def __init__(self, ID, udpPort, tcpPort) -> None:
         # Diferent Config statments
@@ -7,7 +8,7 @@ class ConfigFile:
         self.TCP_port = tcpPort
 
 
-def read(serverFile):
+def read(serverFile, debuger):
     config_file = open(serverFile, "r")
     # Read operation from file
     for line in config_file:
@@ -21,10 +22,26 @@ def read(serverFile):
                 TCP_port = operator[2]
         except:
             pass
-
+    if debuger == 1:
+        print("Configuration added correclty")
     return ConfigFile(ID, UDP_port, TCP_port)
+
+def start():
+    pass
+
 
 
 if __name__ == "__main__":
     file = "server.cfg"
-    configServer = read(file)
+    debug = 0
+    if len(sys.argv) > 1:
+        for arg in range(len(sys.argv)):
+            if arg == 0:
+                pass
+            elif sys.argv[arg] == "-d":
+                debug = 1
+            elif sys.argv[arg] == "-c":
+                file = sys.argv[arg+1]
+    configServer = read(file, debug)
+
+    start()
