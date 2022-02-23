@@ -12,19 +12,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="e7acbf1b-f8ff-4afb-a716-2b32b7dd6f7f" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/client/client.c" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/constants.h" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/client/structs.h" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/client/CMakeLists.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/client.c" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/client.cfg" beforeDir="false" afterPath="$PROJECT_DIR$/client/client.cfg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/CMakeFiles/clion-log.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/practica1/client1.cfg" beforeDir="false" afterPath="$PROJECT_DIR$/client/client1.cfg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server.cfg" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.cfg" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/server/server.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/client/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/client/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -76,17 +65,12 @@
   </component>
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\mfarr\Desktop\Universidad\Xarxes" />
       <recent name="C:\Users\mfarr\Desktop\Universidad\Xarxes\server" />
       <recent name="C:\Users\mfarr\Desktop\Universidad\Xarxes\client" />
-      <recent name="C:\Users\mfarr\Desktop\Universidad\Xarxes" />
     </key>
   </component>
   <component name="RunManager" selected="CMake Application.client">
-    <configuration default="true" type="CLionExternalRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="CLION.EXTERNAL.BUILD" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="client" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-d" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Xarxes" TARGET_NAME="Xarxes" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Xarxes" RUN_TARGET_NAME="Xarxes">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -141,6 +125,8 @@
       <workItem from="1645609239459" duration="304000" />
       <workItem from="1645611393603" duration="1390000" />
       <workItem from="1645612809411" duration="4157000" />
+      <workItem from="1645633870140" duration="526000" />
+      <workItem from="1645634478299" duration="19000" />
     </task>
     <servers />
   </component>
