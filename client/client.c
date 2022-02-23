@@ -8,6 +8,7 @@
 #include "string.h"
 #include "constants.h"
 #include "structs.h"
+#include "errno.h"
 
 struct ClientConfig configuration;
 struct ClientConfig readClientConfig(char filePath[],int debug);
@@ -38,7 +39,7 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
     char* spl;
     char line[255];
     if(file == NULL){
-        printf("File can't be opened");
+        fprintf(stderr,"File can't be opened");
     }
     while(fgets(line,len,file)){
         spl = strtok(line," ");

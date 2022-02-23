@@ -1,5 +1,6 @@
 # Server File
 import sys
+import
 class ConfigFile:
     def __init__(self, ID, udpPort, tcpPort) -> None:
         # Diferent Config statments
