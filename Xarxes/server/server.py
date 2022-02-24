@@ -1,6 +1,7 @@
 # Server File
 import sys
-import
+
+
 class ConfigFile:
     def __init__(self, ID, udpPort, tcpPort) -> None:
         # Diferent Config statments
@@ -16,20 +17,20 @@ def read(serverFile, debuger):
         try:
             operator = line.split()
             if operator[0] == "Id":
-                ID = operator[2]
+                id = operator[2]
             if operator[0] == "UDP-port":
-                UDP_port = operator[2]
+                udp_port = operator[2]
             if operator[0] == "TCP-port":
-                TCP_port = operator[2]
+                tcp_port = operator[2]
         except:
             pass
     if debuger == 1:
         print("Configuration added correclty")
-    return ConfigFile(ID, UDP_port, TCP_port)
+    return ConfigFile(id, udp_port, tcp_port)
+
 
 def start():
     pass
-
 
 
 if __name__ == "__main__":

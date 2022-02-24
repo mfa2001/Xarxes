@@ -11,9 +11,9 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e7acbf1b-f8ff-4afb-a716-2b32b7dd6f7f" name="Changes" comment="Opened in Fedora">
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+    <list default="true" id="e7acbf1b-f8ff-4afb-a716-2b32b7dd6f7f" name="Changes" comment="Refactored folder">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Xarxes/server/server.py" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/server/server.py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -285,7 +285,7 @@
       <workItem from="1645649581268" duration="62000" />
       <workItem from="1645690219825" duration="810000" />
       <workItem from="1645691420684" duration="471000" />
-      <workItem from="1645691938660" duration="220000" />
+      <workItem from="1645691938660" duration="561000" />
     </task>
     <task id="LOCAL-00001" summary="Opened in Fedora">
       <created>1645690943044</created>
@@ -294,7 +294,21 @@
       <option name="project" value="LOCAL" />
       <updated>1645690943044</updated>
     </task>
-    <option name="localTasksCounter" value="2" />
+    <task id="LOCAL-00002" summary="Refactored folder">
+      <created>1645692300548</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1645692300548</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Refactored folder">
+      <created>1645692372228</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1645692372228</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -313,6 +327,7 @@
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Opened in Fedora" />
-    <option name="LAST_COMMIT_MESSAGE" value="Opened in Fedora" />
+    <MESSAGE value="Refactored folder" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refactored folder" />
   </component>
 </project>
