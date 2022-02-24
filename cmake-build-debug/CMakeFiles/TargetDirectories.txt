@@ -1,3 +1,0 @@
-C:/Users/mfarr/Desktop/Universidad/Xarxes/cmake-build-debug/CMakeFiles/Xarxes.dir
-C:/Users/mfarr/Desktop/Universidad/Xarxes/cmake-build-debug/CMakeFiles/edit_cache.dir
-C:/Users/mfarr/Desktop/Universidad/Xarxes/cmake-build-debug/CMakeFiles/rebuild_cache.dir
