@@ -18,6 +18,7 @@ void setupData(int argc, char* argv[]);
 void main(int argc, char* argv[]){
     setupData(argc,argv);
     //Start with register
+    exit(-1);
 }
 void setupData(int argc,char* argv[]){
     int debug = 0;
