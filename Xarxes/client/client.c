@@ -18,11 +18,12 @@ void setupData(int argc, char* argv[]);
 void main(int argc, char* argv[]){
     setupData(argc,argv);
     //Start with register
+    printf(configuration.clientID);
     exit(-1);
 }
 void setupData(int argc,char* argv[]){
     int debug = 0;
-    char file[50] = "..\\client.cfg";
+    char file[50] = "client.cfg";
     for(int index = 1;index<argc;index++){
 
         if(strcmp(argv[index],"-d")==0){
@@ -42,6 +43,7 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
     char line[255];
     if(file == NULL){
         fprintf(stderr,"File can't be opened");
+        exit(-1);
     }
     while(fgets(line,len,file)){
         spl = strtok(line," ");
