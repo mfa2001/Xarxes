@@ -3,6 +3,7 @@
 //
 
 //Server file
+#include <ctype.h>
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -10,16 +11,15 @@
 #include "structs.h"
 #include "errno.h"
 
-struct ClientConfig configuration;
+struct ClientConfig clientConfiguration;
 struct ClientConfig readClientConfig(char filePath[],int debug);
 char* splitLast(char* line);
 void setupData(int argc, char* argv[]);
+void substring(char destination[], char source[], int start, int final);
 
 void main(int argc, char* argv[]){
     setupData(argc,argv);
     //Start with register
-    printf(configuration.clientID);
-    exit(-1);
 }
 void setupData(int argc,char* argv[]){
     int debug = 0;
@@ -32,12 +32,13 @@ void setupData(int argc,char* argv[]){
             strcpy(file,argv[index+1]);
         }
     }
-    configuration = readClientConfig(file,debug);
+    clientConfiguration = readClientConfig(file,debug);
 }
 
 
 struct ClientConfig readClientConfig(char filePath[],int debug){
-    FILE* file = fopen(filePath,"r");
+    struct ClientConfig configuration;
+    FILE *file = fopen(filePath,"r");
     size_t len = 255;
     char* spl;
     char line[255];
@@ -48,32 +49,27 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
     while(fgets(line,len,file)){
         spl = strtok(line," ");
         if(strcmp(spl,"Id")==0){
-            char* splL = splitLast(spl);
-            strncpy(configuration.clientID,splL,len);
+            substring(configuration.clientID,line,5,5+12);
         }
         else if(strcmp(spl,"Params")==0){
-            char* splL = splitLast(spl);
-            char* param = strtok(splL,";");
+            char *param;
+            char *lastParams = splitLast(line);
+            param = strtok(lastParams,";");
             int i = 0;
-            while(param!=NULL) {
-                strncpy(configuration.params[i], param, len);
-                i = i+1;
+            while(param!=NULL){
+                strcpy(configuration.params[i],param);
                 param = strtok(NULL,";");
+                i++;
             }
         }
         else if(strcmp(spl,"Local-TCP")==0){
-            char* splL = splitLast(spl);
-            int intSpl = atoi(splL);
-            configuration.local_TCP = intSpl;
+            substring(configuration.local_TCP,line,12,12+4);
         }
-        else if(strcmp(spl,"Server\0")==0){
-            char* splL = splitLast(spl);
-            strncpy(configuration.server,splL,len);
+        else if(strcmp(spl,"Server")==0){
+            substring(configuration.server,line,9,9+20);
         }
-        else if(strcmp(spl,"Server-UDP\0")==0){
-            char* splL = splitLast(spl);
-            int intSpl = atoi(splL);
-            configuration.server_UDP = intSpl;
+        else if(strcmp(spl,"Server-UDP")==0){
+            substring(configuration.server_UDP,line,13,13+4);
         }
     }
     configuration.debug = debug;
@@ -83,6 +79,21 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
     }
     return configuration;
 }
+void substring(char destination[], char source[], int start, int final){
+    char specialChar[2] = "-;";
+    int index = 0;
+    while(index < final - start){
+        if(isalpha(source[start+index]) || isdigit(source[start+index])){
+            destination[index] = source[start+index];
+            index++;
+        }
+        else{
+            start++;
+        }
+    }
+    destination[index] = '\0';
+}
+
 char* splitLast(char* line){
     for(int i = 0; i <= 1;i++){
         line= strtok(NULL," ");

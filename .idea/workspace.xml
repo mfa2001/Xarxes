@@ -11,25 +11,9 @@
     </configurations>
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="e7acbf1b-f8ff-4afb-a716-2b32b7dd6f7f" name="Changes" comment="Preparing Server">
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/modules.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/modules.xml" afterDir="false" />
+    <list default="true" id="e7acbf1b-f8ff-4afb-a716-2b32b7dd6f7f" name="Changes" comment="Refractor">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/client.c" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/client.c" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/.cmake/api/v1/reply/cache-v2-12eb607afb1bb7e25443.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/.cmake/api/v1/reply/cmakeFiles-v1-cc8dfa63c090a4ff07ab.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/.cmake/api/v1/reply/codemodel-v2-501814fb78421c0b7b99.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/.cmake/api/v1/reply/index-2022-02-24T08-10-41-0629.json" beforeDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/.ninja_deps" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/.ninja_deps" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/.ninja_log" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/.ninja_log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeCache.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeCache.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeFiles/CMakeOutput.log" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeFiles/CMakeOutput.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeFiles/TargetDirectories.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeFiles/TargetDirectories.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeFiles/clion-log.txt" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeFiles/clion-log.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeFiles/rules.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/CMakeFiles/rules.ninja" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/Testing/Temporary/LastTest.log" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/Testing/Temporary/LastTest.log" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/build.ninja" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/build.ninja" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/cmake_install.cmake" beforeDir="false" afterPath="$PROJECT_DIR$/Xarxes/client/cmake-build-debug/cmake_install.cmake" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -167,11 +151,6 @@
       <option name="docutils_open_in_browser" value="false" />
       <method v="2" />
     </configuration>
-    <configuration default="true" type="CMakeRunConfiguration" factoryName="Application" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true">
-      <method v="2">
-        <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
-      </method>
-    </configuration>
     <configuration name="client" type="CMakeRunConfiguration" factoryName="Application" PROGRAM_PARAMS="-d -c client1.cfg" REDIRECT_INPUT="false" ELEVATE="false" USE_EXTERNAL_CONSOLE="false" PASS_PARENT_ENVS_2="true" PROJECT_NAME="Xarxes" TARGET_NAME="Xarxes" CONFIG_NAME="Debug" RUN_TARGET_PROJECT_NAME="Xarxes" RUN_TARGET_NAME="Xarxes">
       <method v="2">
         <option name="com.jetbrains.cidr.execution.CidrBuildBeforeRunTaskProvider$BuildBeforeRunTask" enabled="true" />
@@ -304,7 +283,8 @@
       <workItem from="1645690219825" duration="810000" />
       <workItem from="1645691420684" duration="471000" />
       <workItem from="1645691938660" duration="601000" />
-      <workItem from="1645692595425" duration="1123000" />
+      <workItem from="1645692595425" duration="1234000" />
+      <workItem from="1645693842239" duration="5000" />
     </task>
     <task id="LOCAL-00001" summary="Opened in Fedora">
       <created>1645690943044</created>
@@ -334,7 +314,14 @@
       <option name="project" value="LOCAL" />
       <updated>1645692523341</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Refractor">
+      <created>1645693780844</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1645693780844</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -355,7 +342,8 @@
     <MESSAGE value="Opened in Fedora" />
     <MESSAGE value="Refactored folder" />
     <MESSAGE value="Preparing Server" />
-    <option name="LAST_COMMIT_MESSAGE" value="Preparing Server" />
+    <MESSAGE value="Refractor" />
+    <option name="LAST_COMMIT_MESSAGE" value="Refractor" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
