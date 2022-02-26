@@ -4,9 +4,9 @@
 struct ClientConfig{
     char clientID[10];
     char params[5][15];
-    char local_TCP[4];
-    char server_UDP[4];
-    char server[20];
+    char local_TCP_port[4];
+    char server_UDP_port[4];
+    char server_adress[20];
     int debug;
 };
 

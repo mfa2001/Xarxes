@@ -11,19 +11,21 @@
 #include "constants.h"
 #include "structs.h"
 #include "errno.h"
+#include "netdb.h"
 
 struct ClientConfig clientConfiguration;
 struct ClientConfig readClientConfig(char filePath[],int debug);
 char* splitLast(char* line);
 void setupData(int argc, char* argv[]);
 void substring(char destination[], char source[], int start, int final);
-void registerConnection();
+void setup_udp_socket();
 struct UDP pduRequest(unsigned char type);
 
 void main(int argc, char* argv[]){
     setupData(argc,argv);
     //Start with register
-    registerConnection();
+    setup_udp_socket();
+
 }
 void setupData(int argc,char* argv[]){
     int debug = 0;
@@ -67,13 +69,13 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
             }
         }
         else if(strcmp(spl,"Local-TCP")==0){
-            substring(configuration.local_TCP,line,12,12+4);
+            substring(configuration.local_TCP_port,line,12,12+4);
         }
         else if(strcmp(spl,"Server")==0){
-            substring(configuration.server,line,9,9+20);
+            substring(configuration.server_adress,line,9,9+20);
         }
         else if(strcmp(spl,"Server-UDP")==0){
-            substring(configuration.server_UDP,line,13,13+4);
+            substring(configuration.server_UDP_port,line,13,13+4);
         }
     }
     configuration.debug = debug;
@@ -105,20 +107,45 @@ char* splitLast(char* line){
     return line;
 }
 
-void registerConnection(){
-    //REGISTER FASE
-    int socket;
+void setup_udp_socket(){
+    //create sockets
+
+    struct hostent *ent;
+    int udpSocket, udpPort;
     unsigned char reqType = REG_REQ;
-    struct in_addr* servAddr;
-    struct sockaddr_in clientAddr;
-    struct UDP registerClient = pduRequest(reqType);
+    struct sockaddr_in clientAddr, serverAddr;
 
+    ent = gethostbyname(clientConfiguration.server_adress);
+    if(!ent){
+        printf("ERROR");
+        exit(-1);
+    }
 
+    udpSocket = socket(AF_INET, SOCK_DGRAM,0);
+    if(udpSocket < 0){
+        printf("ERROR");
+        exit(-1);
+    }
+
+    memset(&clientAddr,0,sizeof(struct sockaddr_in));
+    clientAddr.sin_family = AF_INET;
+    clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    clientAddr.sin_port = htons(0);
+
+    if(bind(udpSocket,(struct sockaddr *)&clientAddr,sizeof(struct sockaddr_in))<0){
+        printf("ERROR");
+        exit(-1);
+    }
+
+    memset(&serverAddr,0,sizeof(struct sockaddr_in));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_addr.s_addr=(((struct in_addr *) ent->h_addr_list[0])->s_addr);
+    serverAddr.sin_port = htons(atoi(clientConfiguration.server_UDP_port));
 }
 
 struct UDP pduRequest(unsigned char type){
     struct UDP regReq;
     regReq.type = type;
-    printf(regReq.type);
+
 }
 
