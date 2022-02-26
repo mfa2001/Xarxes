@@ -4,6 +4,7 @@
 
 //Server file
 #include <ctype.h>
+#include <netinet/in.h>
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
@@ -16,10 +17,13 @@ struct ClientConfig readClientConfig(char filePath[],int debug);
 char* splitLast(char* line);
 void setupData(int argc, char* argv[]);
 void substring(char destination[], char source[], int start, int final);
+void registerConnection();
+struct UDP pduRequest(unsigned char type);
 
 void main(int argc, char* argv[]){
     setupData(argc,argv);
     //Start with register
+    registerConnection();
 }
 void setupData(int argc,char* argv[]){
     int debug = 0;
@@ -99,5 +103,22 @@ char* splitLast(char* line){
         line= strtok(NULL," ");
     }
     return line;
+}
+
+void registerConnection(){
+    //REGISTER FASE
+    int socket;
+    unsigned char reqType = REG_REQ;
+    struct in_addr* servAddr;
+    struct sockaddr_in clientAddr;
+    struct UDP registerClient = pduRequest(reqType);
+
+
+}
+
+struct UDP pduRequest(unsigned char type){
+    struct UDP regReq;
+    regReq.type = type;
+    printf(regReq.type);
 }
 
