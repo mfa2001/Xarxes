@@ -13,18 +13,24 @@
 #include "errno.h"
 #include "netdb.h"
 
+//Global variable
 struct ClientConfig clientConfiguration;
+int client_state;
+
 struct ClientConfig readClientConfig(char filePath[],int debug);
 char* splitLast(char* line);
 void setupData(int argc, char* argv[]);
 void substring(char destination[], char source[], int start, int final);
 void setup_udp_socket();
-struct UDP pduRequest(unsigned char type);
+struct UDP mountPDU(unsigned char type,char idComunication[],char data[]);
+void connection();
+void change_client_state(unsigned char newState);
 
 void main(int argc, char* argv[]){
     setupData(argc,argv);
     //Start with register
     setup_udp_socket();
+    connection();
 
 }
 void setupData(int argc,char* argv[]){
@@ -86,9 +92,11 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
     return configuration;
 }
 void substring(char destination[], char source[], int start, int final){
-    char specialChar[2] = "-;";
     int index = 0;
     while(index < final - start){
+        if(strcmp(&source[start+index],"\n")==0){
+            break;
+        }
         if(isalpha(source[start+index]) || isdigit(source[start+index])){
             destination[index] = source[start+index];
             index++;
@@ -97,7 +105,7 @@ void substring(char destination[], char source[], int start, int final){
             start++;
         }
     }
-    destination[index] = '\0';
+    destination[start+index] = '\0';
 }
 
 char* splitLast(char* line){
@@ -112,12 +120,11 @@ void setup_udp_socket(){
 
     struct hostent *ent;
     int udpSocket, udpPort;
-    unsigned char reqType = REG_REQ;
     struct sockaddr_in clientAddr, serverAddr;
 
     ent = gethostbyname(clientConfiguration.server_adress);
     if(!ent){
-        printf("ERROR");
+        printf("ERROR, can not take host name");
         exit(-1);
     }
 
@@ -143,9 +150,65 @@ void setup_udp_socket(){
     serverAddr.sin_port = htons(atoi(clientConfiguration.server_UDP_port));
 }
 
-struct UDP pduRequest(unsigned char type){
+struct UDP mountPDU(unsigned char type,char idComunication[],char data[]){
     struct UDP regReq;
     regReq.type = type;
+    strcpy(regReq.idTransmissor,clientConfiguration.clientID);
+    strcpy(regReq.idCommunication,idComunication);
+    strcpy(regReq.data,data);
+    return regReq;
 
+}
+
+void connection(){
+    change_client_state(NOT_REGISTERED);
+    unsigned char type = REG_REQ;
+    struct UDP registerReq = mountPDU(type,"0000000000","");
+}
+
+char* get_state_into_str(unsigned char state){
+    char *strState;
+    unsigned char try = (unsigned char) 0xa0;
+    if(state == (unsigned char) 0xa0){
+        strState="REG_REQ";
+    }else if(state ==(unsigned char) 0xa1){
+        strState="REG_ACK";
+    }else if(state ==(unsigned char) 0xa2){
+        strState="REG_NACK";
+    }else if(state ==(unsigned char) 0xa3){
+        strState="REG_REJ";
+    }else if(state == (unsigned char)0xa4){
+        strState="REG_INFO";
+    }else if(state == (unsigned char)0xa5){
+        strState="INFO_ACK";
+    }else if(state == (unsigned char)0xa6){
+        strState="INFO_NACK";
+    }else if(state == (unsigned char)0xa7){
+        strState="INFO_REJ";
+    }else if(state == (unsigned char)0xf0){
+        strState="DISCONNECTED";
+    }else if(state == (unsigned char)0xf1){
+        strState="NOT_REGISTERED";
+    }else if(state == (unsigned char)0xf2){
+        strState="WAIT_ACK_REG";
+    }else if(state == (unsigned char)0xf3){
+        strState="WAIT_INFO";
+    }else if(state == (unsigned char)0xf4){
+        strState="WAIT_ACK_INFO";
+    }else if(state == (unsigned char)0xf5){
+        strState="REGISTERED";
+    }else if(state ==(unsigned char) 0xf6){
+        strState="SEND_ALIVE";
+    }else{
+        strState="ERROR";
+    }
+    return strState;
+}
+
+
+void change_client_state(unsigned char newState){
+    client_state = newState;
+    char *newStateStr = get_state_into_str(newState);
+    printf("Client state changed to: %s",newStateStr);
 }
 

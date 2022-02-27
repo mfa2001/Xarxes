@@ -10,6 +10,7 @@
 #define INFO_ACK 0Xa5
 #define INFO_NACK 0Xa6
 #define INFO_REJ 0Xa7
+#define ERROR 0Xa8
 
 #define DISCONNECTED 0xf0
 #define NOT_REGISTERED 0xf1
