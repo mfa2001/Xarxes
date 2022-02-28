@@ -16,3 +16,13 @@ struct UDP{
     char idCommunication[11];
     char data[61];
 };
+
+struct Sockets{
+    int udp_socket;
+    struct sockaddr_in udp_addr_server;
+
+    struct sockaddr_in client_adress;
+
+    int tcp_socket;
+    struct sockaddr_in tcp_addr_server;
+};

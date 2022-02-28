@@ -12,10 +12,12 @@
 #include "structs.h"
 #include "errno.h"
 #include "netdb.h"
+#include "unistd.h"
 
 //Global variable
 struct ClientConfig clientConfiguration;
 int client_state;
+struct Sockets allSockets;
 
 struct ClientConfig readClientConfig(char filePath[],int debug);
 char* splitLast(char* line);
@@ -25,6 +27,8 @@ void setup_udp_socket();
 struct UDP mountPDU(unsigned char type,char idComunication[],char data[]);
 void connection();
 void change_client_state(unsigned char newState);
+void send_package_udp(struct UDP request);
+struct UDP recive_package_UDP();
 
 void main(int argc, char* argv[]){
     setupData(argc,argv);
@@ -55,7 +59,7 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
     char* spl;
     char line[255];
     if(file == NULL){
-        fprintf(stderr,"File can't be opened");
+        fprintf(stderr,"File can't be opened\n");
         exit(-1);
     }
     while(fgets(line,len,file)){
@@ -119,35 +123,33 @@ void setup_udp_socket(){
     //create sockets
 
     struct hostent *ent;
-    int udpSocket, udpPort;
-    struct sockaddr_in clientAddr, serverAddr;
 
     ent = gethostbyname(clientConfiguration.server_adress);
     if(!ent){
-        printf("ERROR, can not take host name");
+        printf("ERROR, can not take host name\n");
         exit(-1);
     }
 
-    udpSocket = socket(AF_INET, SOCK_DGRAM,0);
-    if(udpSocket < 0){
-        printf("ERROR");
+    allSockets.udp_socket = socket(AF_INET, SOCK_DGRAM,0);
+    if(allSockets.udp_socket < 0){
+        printf("ERROR creating socket \n");
         exit(-1);
     }
 
-    memset(&clientAddr,0,sizeof(struct sockaddr_in));
-    clientAddr.sin_family = AF_INET;
-    clientAddr.sin_addr.s_addr = htonl(INADDR_ANY);
-    clientAddr.sin_port = htons(0);
+    memset(&allSockets.client_adress,0,sizeof(struct sockaddr_in));
+    allSockets.client_adress.sin_family = AF_INET;
+    allSockets.client_adress.sin_addr.s_addr = htonl(INADDR_ANY);
+    allSockets.client_adress.sin_port = htons(0);
 
-    if(bind(udpSocket,(struct sockaddr *)&clientAddr,sizeof(struct sockaddr_in))<0){
-        printf("ERROR");
+    if(bind(allSockets.udp_socket,(struct sockaddr *)&allSockets.client_adress,sizeof(struct sockaddr_in))<0){
+        printf("ERROR in BINDING\n");
         exit(-1);
     }
 
-    memset(&serverAddr,0,sizeof(struct sockaddr_in));
-    serverAddr.sin_family = AF_INET;
-    serverAddr.sin_addr.s_addr=(((struct in_addr *) ent->h_addr_list[0])->s_addr);
-    serverAddr.sin_port = htons(atoi(clientConfiguration.server_UDP_port));
+    memset(&allSockets.udp_addr_server,0,sizeof(struct sockaddr_in));
+    allSockets.udp_addr_server.sin_family=AF_INET;
+    allSockets.udp_addr_server.sin_addr.s_addr=(((struct in_addr *) ent->h_addr_list[0])->s_addr);
+    allSockets.udp_addr_server.sin_port = htons(atoi(clientConfiguration.server_UDP_port));
 }
 
 struct UDP mountPDU(unsigned char type,char idComunication[],char data[]){
@@ -157,13 +159,17 @@ struct UDP mountPDU(unsigned char type,char idComunication[],char data[]){
     strcpy(regReq.idCommunication,idComunication);
     strcpy(regReq.data,data);
     return regReq;
-
 }
 
 void connection(){
     change_client_state(NOT_REGISTERED);
     unsigned char type = REG_REQ;
     struct UDP registerReq = mountPDU(type,"0000000000","");
+    send_package_udp(registerReq);
+    change_client_state(WAIT_ACK_REG);
+    struct UDP recivePackage = recive_package_UDP();
+    printf("%hhu \n, %s\n, %s\n, %s\n",recivePackage.type,recivePackage.idCommunication,recivePackage.idTransmissor,recivePackage.data);
+    close(allSockets.udp_socket);
 }
 
 char* get_state_into_str(unsigned char state){
@@ -209,6 +215,40 @@ char* get_state_into_str(unsigned char state){
 void change_client_state(unsigned char newState){
     client_state = newState;
     char *newStateStr = get_state_into_str(newState);
-    printf("Client state changed to: %s",newStateStr);
+    printf("Client state changed to: %s\n",newStateStr);
 }
 
+void send_package_udp(struct UDP request){
+    int a = sendto(allSockets.udp_socket,&request,sizeof(request),0,
+                   (struct sockaddr*)&allSockets.udp_addr_server,sizeof(allSockets.udp_addr_server));
+    char message[61];
+    if(a<0){
+        printf("ERROR SENDING PACKAGE TO UDP\n");
+        exit(-1);
+    }else if(clientConfiguration.debug ==1){
+        printf("Data sended correctly\n");
+    }
+}
+
+struct UDP recive_package_UDP(){
+    fd_set rfds;
+    struct UDP *recivedPackage = malloc(sizeof(struct UDP));
+    char* buff = malloc(sizeof(struct UDP));
+
+    FD_ZERO(&rfds);
+    FD_SET(allSockets.udp_socket,&rfds);
+    struct timeval* timeout;
+    timeout.tv_sec = 100;
+    timeout.tv_usec = 0;
+
+    if(select(allSockets.udp_socket + 1, &rfds,NULL,NULL,timeout){
+        int a = recvfrom(allSockets.udp_socket,buff,sizeof(recivedPackage),0,
+                         (struct sockaddr*)0,(socklen_t *)0);
+        if(a<0) {
+            printf("ERROR Cannot recive a message");
+            exit(-1);
+        }
+        return recivedPackage;
+    }
+
+}
