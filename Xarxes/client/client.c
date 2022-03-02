@@ -20,7 +20,7 @@ int client_state;
 struct Sockets allSockets;
 
 struct ClientConfig readClientConfig(char filePath[],int debug);
-char* splitLast(char* line);
+char* splitLast(char* split);
 void setupData(int argc, char* argv[]);
 void setup_udp_socket();
 struct UDP mountPduRequest();
@@ -56,68 +56,52 @@ void setupData(int argc,char* argv[]){
 struct ClientConfig readClientConfig(char filePath[],int debug){
     struct ClientConfig configuration;
     FILE *file = fopen(filePath,"r");
-    size_t len = 255;
-    char* spl;
     char line[255];
+    char* split;
+    size_t len = 255;
     if(file == NULL){
-        fprintf(stderr,"File can't be opened\n");
+        printf("ERROR reading file");
         exit(-1);
     }
-
-    while(fgets(line,len,file)){
-        char* c = strchr(line,'\n');
-        if(c){
+    while(fgets(line,len,file)) {
+        char *c = strchr(line, '\n');
+        if (c) {
             *c = '\0';
         }
-        char* editLine;
-        editLine = (char*) malloc(sizeof(line));
-        char* split;
-        strcpy(editLine,line);
-        spl = strtok(editLine," ");
-        if(strcmp(spl,"Id")==0){
-            split = splitLast(line);
-            strcpy(configuration.clientID,split);
-        }
-        else if(strcmp(spl,"Params")==0){
+        split = strtok(line, " ");
+        if (strcmp(split, "Id") == 0) {
+            strcpy(configuration.clientID, splitLast(split));
+        } else if (strcmp(split, "Params") == 0) {
             char *param;
             char *lastParams = splitLast(line);
-            param = strtok(lastParams,";");
+            param = strtok(lastParams, ";");
             int i = 0;
-            while(param!=NULL){
-                strcpy(configuration.params[i],param);
-                param = strtok(NULL,";");
+            while (param != NULL) {
+                strcpy(configuration.params[i], param);
+                param = strtok(NULL, ";");
                 i++;
             }
-        }
-        else if(strcmp(spl,"Local-TCP")==0){
-            split = splitLast(line);
-            strcpy(configuration.local_TCP_port,split);
-        }
-        else if(strcmp(spl,"Server")==0){
-            split = splitLast(line);
-            strcpy(configuration.server_adress,split);
-        }
-        else if(strcmp(spl,"Server-UDP")==0){
-            split = splitLast(line);
-            strcpy(configuration.server_UDP_port,split);
+
+        } else if (strcmp(split, "Local-TCP") == 0) {
+            strcpy(configuration.local_TCP_port, splitLast(split));
+        } else if (strcmp(split, "Server") == 0) {
+            strcpy(configuration.server_adress, splitLast(split));
+        } else if (strcmp(split, "Server-UDP") == 0) {
+            strcpy(configuration.server_UDP_port, splitLast(split));
         }
     }
-    //configuration.debug = debug;
-    fclose(file);
-    if(configuration.debug==1){
-        printf("Configuration added correctly\n");
+    configuration.debug = debug;
+    if(configuration.debug ==1){
+        printf("Configuration added correctly");
     }
     return configuration;
 }
 
-char* splitLast(char* line){
-    char* sLine = strtok(line," ");
-    char* newline;
-    while(sLine!=NULL){
-        strcpy(newline,sLine);
-        sLine = strtok(NULL," ");
+char* splitLast(char* split) {
+    for (int i = 0; i <= 1; i++) {
+        split = strtok(NULL, " ");
     }
-    return newline;
+    return split;
 }
 
 void setup_udp_socket(){
@@ -155,10 +139,11 @@ void setup_udp_socket(){
 
 struct UDP mountPduRequest(){
     struct UDP regReq;
+    size_t len = sizeof(clientConfiguration.clientID);
     regReq.type = (unsigned char) REG_REQ;
-    //substring(regReq.idTransmissor,clientConfiguration.clientID,0,0+10);
-    //substring(regReq.idCommunication,"0000000000",0,0+10);
-    //substring(regReq.data,"",0,0);
+    memccpy(regReq.idTransmissor,clientConfiguration.clientID,0,len);
+    strcpy(regReq.idCommunication,"0000000000");
+    strcpy(regReq.data,"");
     return regReq;
 }
 
