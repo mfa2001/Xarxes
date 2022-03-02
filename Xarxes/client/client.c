@@ -22,16 +22,17 @@ struct Sockets allSockets;
 struct ClientConfig readClientConfig(char filePath[],int debug);
 char* splitLast(char* line);
 void setupData(int argc, char* argv[]);
-void substring(char destination[], char source[], int start, int final);
 void setup_udp_socket();
-struct UDP mountPDU(unsigned char type,char idComunication[],char data[]);
+struct UDP mountPduRequest();
 void connection();
 void change_client_state(unsigned char newState);
 void send_package_udp(struct UDP request);
 struct UDP recive_package_UDP();
 
-void main(int argc, char* argv[]){
+int main(int argc, char* argv[]){
     setupData(argc,argv);
+    //Funtion to print data implements
+
     //Start with register
     setup_udp_socket();
     connection();
@@ -62,10 +63,20 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
         fprintf(stderr,"File can't be opened\n");
         exit(-1);
     }
+
     while(fgets(line,len,file)){
-        spl = strtok(line," ");
+        char* c = strchr(line,'\n');
+        if(c){
+            *c = '\0';
+        }
+        char* editLine;
+        editLine = (char*) malloc(sizeof(line));
+        char* split;
+        strcpy(editLine,line);
+        spl = strtok(editLine," ");
         if(strcmp(spl,"Id")==0){
-            substring(configuration.clientID,line,5,5+12);
+            split = splitLast(line);
+            strcpy(configuration.clientID,split);
         }
         else if(strcmp(spl,"Params")==0){
             char *param;
@@ -79,44 +90,34 @@ struct ClientConfig readClientConfig(char filePath[],int debug){
             }
         }
         else if(strcmp(spl,"Local-TCP")==0){
-            substring(configuration.local_TCP_port,line,12,12+4);
+            split = splitLast(line);
+            strcpy(configuration.local_TCP_port,split);
         }
         else if(strcmp(spl,"Server")==0){
-            substring(configuration.server_adress,line,9,9+20);
+            split = splitLast(line);
+            strcpy(configuration.server_adress,split);
         }
         else if(strcmp(spl,"Server-UDP")==0){
-            substring(configuration.server_UDP_port,line,13,13+4);
+            split = splitLast(line);
+            strcpy(configuration.server_UDP_port,split);
         }
     }
-    configuration.debug = debug;
+    //configuration.debug = debug;
     fclose(file);
     if(configuration.debug==1){
         printf("Configuration added correctly\n");
     }
     return configuration;
 }
-void substring(char destination[], char source[], int start, int final){
-    int index = 0;
-    while(index < final - start){
-        if(strcmp(&source[start+index],"\n")==0){
-            break;
-        }
-        if(isalpha(source[start+index]) || isdigit(source[start+index])){
-            destination[index] = source[start+index];
-            index++;
-        }
-        else{
-            start++;
-        }
-    }
-    destination[start+index] = '\0';
-}
 
 char* splitLast(char* line){
-    for(int i = 0; i <= 1;i++){
-        line= strtok(NULL," ");
+    char* sLine = strtok(line," ");
+    char* newline;
+    while(sLine!=NULL){
+        strcpy(newline,sLine);
+        sLine = strtok(NULL," ");
     }
-    return line;
+    return newline;
 }
 
 void setup_udp_socket(){
@@ -152,19 +153,18 @@ void setup_udp_socket(){
     allSockets.udp_addr_server.sin_port = htons(atoi(clientConfiguration.server_UDP_port));
 }
 
-struct UDP mountPDU(unsigned char type,char idComunication[],char data[]){
+struct UDP mountPduRequest(){
     struct UDP regReq;
-    regReq.type = type;
-    strcpy(regReq.idTransmissor,clientConfiguration.clientID);
-    strcpy(regReq.idCommunication,idComunication);
-    strcpy(regReq.data,data);
+    regReq.type = (unsigned char) REG_REQ;
+    //substring(regReq.idTransmissor,clientConfiguration.clientID,0,0+10);
+    //substring(regReq.idCommunication,"0000000000",0,0+10);
+    //substring(regReq.data,"",0,0);
     return regReq;
 }
 
 void connection(){
     change_client_state(NOT_REGISTERED);
-    unsigned char type = REG_REQ;
-    struct UDP registerReq = mountPDU(type,"0000000000","");
+    struct UDP registerReq = mountPduRequest();
     send_package_udp(registerReq);
     change_client_state(WAIT_ACK_REG);
     struct UDP recivePackage = recive_package_UDP();
@@ -174,9 +174,8 @@ void connection(){
 
 char* get_state_into_str(unsigned char state){
     char *strState;
-    unsigned char try = (unsigned char) 0xa0;
     if(state == (unsigned char) 0xa0){
-        strState="REG_REQ";
+        strcpy(strState,"REG_REQ");
     }else if(state ==(unsigned char) 0xa1){
         strState="REG_ACK";
     }else if(state ==(unsigned char) 0xa2){
@@ -231,24 +230,14 @@ void send_package_udp(struct UDP request){
 }
 
 struct UDP recive_package_UDP(){
-    fd_set rfds;
-    struct UDP *recivedPackage = malloc(sizeof(struct UDP));
-    char* buff = malloc(sizeof(struct UDP));
-
-    FD_ZERO(&rfds);
-    FD_SET(allSockets.udp_socket,&rfds);
-    struct timeval* timeout;
-    timeout.tv_sec = 100;
-    timeout.tv_usec = 0;
-
-    if(select(allSockets.udp_socket + 1, &rfds,NULL,NULL,timeout){
-        int a = recvfrom(allSockets.udp_socket,buff,sizeof(recivedPackage),0,
+    struct UDP recivedPackage;
+    char* buff;
+    int a = recvfrom(allSockets.udp_socket,buff,sizeof(recivedPackage),0,
                          (struct sockaddr*)0,(socklen_t *)0);
-        if(a<0) {
-            printf("ERROR Cannot recive a message");
-            exit(-1);
-        }
-        return recivedPackage;
+    if(a<0) {
+        printf("ERROR Cannot recive a message");
+        exit(-1);
     }
-
+    return recivedPackage;
 }
+

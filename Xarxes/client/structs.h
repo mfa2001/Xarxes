@@ -3,10 +3,10 @@
 //
 struct ClientConfig{
     char clientID[10];
-    char params[5][15];
+    char params[5][15]; //Make it tuple
     char local_TCP_port[4];
-    char server_UDP_port[4];
     char server_adress[20];
+    char server_UDP_port[4];
     int debug;
 };
 
