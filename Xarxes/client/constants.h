@@ -19,3 +19,10 @@
 #define WAIT_ACK_INFO 0xf4
 #define REGISTERED 0xf5
 #define SEND_ALIVE 0xf6
+
+#define t 1
+#define u 2
+#define n 8
+#define o 3
+#define p 2
+#define q 4

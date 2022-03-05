@@ -5,7 +5,7 @@ struct ClientConfig{
     char clientID[10];
     char params[5][15]; //Make it tuple
     char local_TCP_port[4];
-    char server_adress[20];
+    char *server_adress;
     char server_UDP_port[4];
     int debug;
 };
@@ -25,4 +25,8 @@ struct Sockets{
 
     int tcp_socket;
     struct sockaddr_in tcp_addr_server;
+};
+
+struct Client{
+    int unsucssesful_singUps;
 };

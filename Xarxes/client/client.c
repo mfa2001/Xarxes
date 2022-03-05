@@ -3,29 +3,30 @@
 //
 
 //Server file
-#include <ctype.h>
 #include <netinet/in.h>
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 #include "constants.h"
 #include "structs.h"
-#include "errno.h"
 #include "netdb.h"
 #include "unistd.h"
 
+#define LONGDADES 100
+
 //Global variable
 struct ClientConfig clientConfiguration;
-int client_state;
+char *client_state = NULL;
 struct Sockets allSockets;
+struct Client clientInfo;
 
-struct ClientConfig readClientConfig(char filePath[],int debug);
-char* splitLast(char* split);
+void readClientConfig(FILE *file,int debug);
+char* splitLast(char split[]);
 void setupData(int argc, char* argv[]);
 void setup_udp_socket();
 struct UDP mountPduRequest();
 void connection();
-void change_client_state(unsigned char newState);
+void change_client_state(char *newState);
 void send_package_udp(struct UDP request);
 struct UDP recive_package_UDP();
 
@@ -35,73 +36,123 @@ int main(int argc, char* argv[]){
 
     //Start with register
     setup_udp_socket();
+    change_client_state("NOT_REGISTERED");
+
     connection();
 
 }
 void setupData(int argc,char* argv[]){
     int debug = 0;
-    char file[50] = "client.cfg";
+    FILE *config_file = NULL;
     for(int index = 1;index<argc;index++){
 
         if(strcmp(argv[index],"-d")==0){
             debug = 1;
         }else if(strcmp(argv[index],"-c")==0){
-            strcpy(file,argv[index+1]);
+            config_file = fopen(argv[index+1],"r");
         }
     }
-    clientConfiguration = readClientConfig(file,debug);
+    if(config_file==NULL){
+        config_file = fopen("client.cfg","r");
+        if(config_file==NULL){
+            printf("ERROR can not read file");
+        }
+    }
+    readClientConfig(config_file,debug);
 }
 
 
-struct ClientConfig readClientConfig(char filePath[],int debug){
-    struct ClientConfig configuration;
-    FILE *file = fopen(filePath,"r");
-    char line[255];
+void readClientConfig(FILE *file,int debug){
+    char line[50];
     char* split;
-    size_t len = 255;
-    if(file == NULL){
-        printf("ERROR reading file");
-        exit(-1);
-    }
-    while(fgets(line,len,file)) {
+
+    while(fgets(line,50,file)) {
         char *c = strchr(line, '\n');
         if (c) {
             *c = '\0';
         }
         split = strtok(line, " ");
         if (strcmp(split, "Id") == 0) {
-            strcpy(configuration.clientID, splitLast(split));
+            strcpy(clientConfiguration.clientID, splitLast(split));
         } else if (strcmp(split, "Params") == 0) {
             char *param;
             char *lastParams = splitLast(line);
             param = strtok(lastParams, ";");
             int i = 0;
             while (param != NULL) {
-                strcpy(configuration.params[i], param);
+                strcpy(clientConfiguration.params[i], param);
                 param = strtok(NULL, ";");
                 i++;
             }
 
         } else if (strcmp(split, "Local-TCP") == 0) {
-            strcpy(configuration.local_TCP_port, splitLast(split));
+            strcpy(clientConfiguration.local_TCP_port, splitLast(split));
         } else if (strcmp(split, "Server") == 0) {
-            strcpy(configuration.server_adress, splitLast(split));
+            char *token = splitLast(split);
+            clientConfiguration.server_adress = malloc(strlen(token));
+            strcpy(clientConfiguration.server_adress, token);
         } else if (strcmp(split, "Server-UDP") == 0) {
-            strcpy(configuration.server_UDP_port, splitLast(split));
+            strcpy(clientConfiguration.server_UDP_port, splitLast(split));
         }
     }
-    configuration.debug = debug;
-    if(configuration.debug ==1){
-        printf("Configuration added correctly");
+    clientConfiguration.debug = debug;
+    if(clientConfiguration.debug ==1){
+        printf("Configuration added correctly\n");
     }
-    return configuration;
 }
 
-char* splitLast(char* split) {
+char *splitLast(char split[]) {
     for (int i = 0; i <= 1; i++) {
         split = strtok(NULL, " ");
     }
     return split;
+}
+/*
+unsigned char get_state_into_unChar(char *state){
+    unsigned char state_type;
+    if(strcmp(state,"REG_REQ")==0){
+        state_type = (unsigned char) 0xa0;
+    }else if(strcmp(state,"REG_ACK")==0){
+        state_type = (unsigned char) 0xa1;
+    }
+}
+*/
+char* get_state_into_str(unsigned char state){
+    char *strState;
+    if(state == (unsigned char) 0xa0){
+        strState = "REG_REQ";
+    }else if(state ==(unsigned char) 0xa1){
+        strState="REG_ACK";
+    }else if(state ==(unsigned char) 0xa2){
+        strState="REG_NACK";
+    }else if(state ==(unsigned char) 0xa3){
+        strState="REG_REJ";
+    }else if(state == (unsigned char)0xa4){
+        strState="REG_INFO";
+    }else if(state == (unsigned char)0xa5){
+        strState="INFO_ACK";
+    }else if(state == (unsigned char)0xa6){
+        strState="INFO_NACK";
+    }else if(state == (unsigned char)0xa7){
+        strState="INFO_REJ";
+    }else if(state == (unsigned char)0xf0){
+        strState="DISCONNECTED";
+    }else if(state == (unsigned char)0xf1){
+        strState="NOT_REGISTERED";
+    }else if(state == (unsigned char)0xf2){
+        strState="WAIT_ACK_REG";
+    }else if(state == (unsigned char)0xf3){
+        strState="WAIT_INFO";
+    }else if(state == (unsigned char)0xf4){
+        strState="WAIT_ACK_INFO";
+    }else if(state == (unsigned char)0xf5){
+        strState="REGISTERED";
+    }else if(state ==(unsigned char) 0xf6){
+        strState="SEND_ALIVE";
+    }else{
+        strState="ERROR";
+    }
+    return strState;
 }
 
 void setup_udp_socket(){
@@ -141,71 +192,45 @@ struct UDP mountPduRequest(){
     struct UDP regReq;
     size_t len = sizeof(clientConfiguration.clientID);
     regReq.type = (unsigned char) REG_REQ;
-    memccpy(regReq.idTransmissor,clientConfiguration.clientID,0,len);
+    memcpy(regReq.idTransmissor,clientConfiguration.clientID,len);
     strcpy(regReq.idCommunication,"0000000000");
     strcpy(regReq.data,"");
     return regReq;
 }
 
 void connection(){
-    change_client_state(NOT_REGISTERED);
-    struct UDP registerReq = mountPduRequest();
-    send_package_udp(registerReq);
-    change_client_state(WAIT_ACK_REG);
-    struct UDP recivePackage = recive_package_UDP();
-    printf("%hhu \n, %s\n, %s\n, %s\n",recivePackage.type,recivePackage.idCommunication,recivePackage.idTransmissor,recivePackage.data);
-    close(allSockets.udp_socket);
-}
+    /*clientInfo.unsucssesful_singUps = 0;
+    while(clientInfo.unsucssesful_singUps < o){
+        if(clientConfiguration.debug == 1){
+            //Escribir nuevo intento + numero de trys
+        }
+        for (int reg_sent = 0; reg_sent < n; reg_sent++){
 
-char* get_state_into_str(unsigned char state){
-    char *strState;
-    if(state == (unsigned char) 0xa0){
-        strcpy(strState,"REG_REQ");
-    }else if(state ==(unsigned char) 0xa1){
-        strState="REG_ACK";
-    }else if(state ==(unsigned char) 0xa2){
-        strState="REG_NACK";
-    }else if(state ==(unsigned char) 0xa3){
-        strState="REG_REJ";
-    }else if(state == (unsigned char)0xa4){
-        strState="REG_INFO";
-    }else if(state == (unsigned char)0xa5){
-        strState="INFO_ACK";
-    }else if(state == (unsigned char)0xa6){
-        strState="INFO_NACK";
-    }else if(state == (unsigned char)0xa7){
-        strState="INFO_REJ";
-    }else if(state == (unsigned char)0xf0){
-        strState="DISCONNECTED";
-    }else if(state == (unsigned char)0xf1){
-        strState="NOT_REGISTERED";
-    }else if(state == (unsigned char)0xf2){
-        strState="WAIT_ACK_REG";
-    }else if(state == (unsigned char)0xf3){
-        strState="WAIT_INFO";
-    }else if(state == (unsigned char)0xf4){
-        strState="WAIT_ACK_INFO";
-    }else if(state == (unsigned char)0xf5){
-        strState="REGISTERED";
-    }else if(state ==(unsigned char) 0xf6){
-        strState="SEND_ALIVE";
-    }else{
-        strState="ERROR";
+            if(get_state_into_str(recivePackage.type) == "REG_REJ"){
+
+            }
+        }
     }
-    return strState;
+     */
+    struct UDP registerReq;
+    registerReq = mountPduRequest();
+    send_package_udp(registerReq);
+    change_client_state("WAIT_ACK_REG");
+    struct UDP recivePackage = recive_package_UDP();
+    close(allSockets.udp_socket);
+    exit(-1);
 }
 
-
-void change_client_state(unsigned char newState){
-    client_state = newState;
-    char *newStateStr = get_state_into_str(newState);
-    printf("Client state changed to: %s\n",newStateStr);
+void change_client_state(char *newState){
+    client_state = malloc(sizeof(&newState));
+    strcpy(client_state,newState);
+    printf("Client state changed to: %s\n",client_state);
 }
 
 void send_package_udp(struct UDP request){
     int a = sendto(allSockets.udp_socket,&request,sizeof(request),0,
                    (struct sockaddr*)&allSockets.udp_addr_server,sizeof(allSockets.udp_addr_server));
-    char message[61];
+    //char message[61];
     if(a<0){
         printf("ERROR SENDING PACKAGE TO UDP\n");
         exit(-1);
@@ -215,14 +240,15 @@ void send_package_udp(struct UDP request){
 }
 
 struct UDP recive_package_UDP(){
-    struct UDP recivedPackage;
-    char* buff;
-    int a = recvfrom(allSockets.udp_socket,buff,sizeof(recivedPackage),0,
-                         (struct sockaddr*)0,(socklen_t *)0);
+    struct UDP *recivedPackage = malloc(sizeof (struct UDP));
+    char *buf = malloc(sizeof(struct UDP));
+    int a = recvfrom(allSockets.udp_socket,buf,sizeof(struct UDP),0,
+                         (struct sockaddr *)0,(socklen_t *)0);
     if(a<0) {
         printf("ERROR Cannot recive a message");
         exit(-1);
     }
-    return recivedPackage;
+    recivedPackage = (struct UDP *) buf;
+    return *recivedPackage;
 }
 
