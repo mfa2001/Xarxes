@@ -1,15 +1,4 @@
 # Xarxes
-All asssignments of Xarxes
+Practica1 xarxes
 
-
-Assignment 1: Socket programming with C and Python
-
-Assignment 2: Implement a real case of network
-
-Assignment 3: Study the trafic of a network with WireShark
-
-
-
-
-
-I don't know if the client or server are in this language, it can change.
+No tenir en compte les dades que surten al debugg, si s'assigne memoria, s'ha de ficar /0 al final per determinar el fi de linea.

@@ -22,7 +22,7 @@ struct Client clientInfo;
 
 void readClientConfig(FILE *file,int debug);
 char* splitLast(char split[]);
-void setupData(int argc, char* argv[]);
+void setupData(int argc,const char* argv[]);
 void setup_udp_socket();
 struct UDP mountPduRequest();
 void connection();
@@ -30,7 +30,9 @@ void change_client_state(char *newState);
 void send_package_udp(struct UDP request);
 struct UDP recive_package_UDP();
 
-int main(int argc, char* argv[]){
+
+int main(int argc, const char* argv[]){
+    struct UDP test;
     setupData(argc,argv);
     //Funtion to print data implements
 
@@ -41,7 +43,7 @@ int main(int argc, char* argv[]){
     connection();
 
 }
-void setupData(int argc,char* argv[]){
+void setupData(int argc,const char* argv[]){
     int debug = 0;
     FILE *config_file = NULL;
     for(int index = 1;index<argc;index++){
@@ -65,6 +67,7 @@ void setupData(int argc,char* argv[]){
 void readClientConfig(FILE *file,int debug){
     char line[50];
     char* split;
+    char* token;
 
     while(fgets(line,50,file)) {
         char *c = strchr(line, '\n');
@@ -72,6 +75,7 @@ void readClientConfig(FILE *file,int debug){
             *c = '\0';
         }
         split = strtok(line, " ");
+
         if (strcmp(split, "Id") == 0) {
             strcpy(clientConfiguration.clientID, splitLast(split));
         } else if (strcmp(split, "Params") == 0) {
@@ -88,7 +92,7 @@ void readClientConfig(FILE *file,int debug){
         } else if (strcmp(split, "Local-TCP") == 0) {
             strcpy(clientConfiguration.local_TCP_port, splitLast(split));
         } else if (strcmp(split, "Server") == 0) {
-            char *token = splitLast(split);
+            token = splitLast(split);
             clientConfiguration.server_adress = malloc(strlen(token));
             strcpy(clientConfiguration.server_adress, token);
         } else if (strcmp(split, "Server-UDP") == 0) {
@@ -217,6 +221,7 @@ void connection(){
     send_package_udp(registerReq);
     change_client_state("WAIT_ACK_REG");
     struct UDP recivePackage = recive_package_UDP();
+    printf("%s",recivePackage.data);
     close(allSockets.udp_socket);
     exit(-1);
 }
