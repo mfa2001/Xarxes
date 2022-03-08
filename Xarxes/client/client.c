@@ -16,19 +16,21 @@
 
 //Global variable
 struct ClientConfig clientConfiguration;
-char *client_state = NULL;
+char* client_state = NULL;
 struct Sockets allSockets;
-struct Client clientInfo;
+struct Server server;
 
 void readClientConfig(FILE *file,int debug);
 char* splitLast(char split[]);
 void setupData(int argc,const char* argv[]);
 void setup_udp_socket();
-struct UDP mountPduRequest();
+struct UDP mountPdu(unsigned char type, char* IdTransmissor, char* IdCommunication, char* Data);
 void connection();
+unsigned char get_state_into_unChar(char *state);
 void change_client_state(char *newState);
 void send_package_udp(struct UDP request);
 struct UDP recive_package_UDP();
+void save_server_data(struct UDP recivedPackage);
 
 
 int main(int argc, const char* argv[]){
@@ -111,7 +113,7 @@ char *splitLast(char split[]) {
     }
     return split;
 }
-/*
+
 unsigned char get_state_into_unChar(char *state){
     unsigned char state_type;
     if(strcmp(state,"REG_REQ")==0){
@@ -120,7 +122,7 @@ unsigned char get_state_into_unChar(char *state){
         state_type = (unsigned char) 0xa1;
     }
 }
-*/
+
 char* get_state_into_str(unsigned char state){
     char *strState;
     if(state == (unsigned char) 0xa0){
@@ -192,38 +194,66 @@ void setup_udp_socket(){
     allSockets.udp_addr_server.sin_port = htons(atoi(clientConfiguration.server_UDP_port));
 }
 
-struct UDP mountPduRequest(){
+struct UDP mountPdu(unsigned char type, char* IdTransmissor, char* IdCommunication, char* Data){
     struct UDP regReq;
-    size_t len = sizeof(clientConfiguration.clientID);
-    regReq.type = (unsigned char) REG_REQ;
-    memcpy(regReq.idTransmissor,clientConfiguration.clientID,len);
-    strcpy(regReq.idCommunication,"0000000000");
-    strcpy(regReq.data,"");
+    regReq.type = (unsigned char) type;
+    strcpy(regReq.idTransmissor,IdTransmissor); // Not passing correctly
+    strcpy(regReq.idCommunication,IdCommunication);
+    strcpy(regReq.data,Data);
     return regReq;
 }
 
 void connection(){
-    /*clientInfo.unsucssesful_singUps = 0;
-    while(clientInfo.unsucssesful_singUps < o){
+    int unsucssesful_singUps = 0;
+    while(unsucssesful_singUps < o){
         if(clientConfiguration.debug == 1){
             //Escribir nuevo intento + numero de trys
         }
         for (int reg_sent = 0; reg_sent < n; reg_sent++){
+            struct UDP registerReq;
+            registerReq = mountPdu(REG_REQ,&clientConfiguration.clientID,"0000000000","");
+            send_package_udp(registerReq);
+            change_client_state("WAIT_ACK_REG");
+            struct UDP recivePackage = recive_package_UDP();
 
-            if(get_state_into_str(recivePackage.type) == "REG_REJ"){
-
+            if(strcmp(get_state_into_str(recivePackage.type),"REG_REJ")==0){
+                change_client_state("NOT_REGISTERED");
+                if(clientConfiguration.debug == 1){
+                    printf("Package Rejected, trying sign up agains, try nº %i\n",unsucssesful_singUps);
+                }
+                unsucssesful_singUps++;
+                break;
+            }else if(strcmp(get_state_into_str(recivePackage.type),"REG_NACK")==0){
+                change_client_state("NOT_REGISTERED");
+                if(clientConfiguration.debug == 1){
+                    printf("Package Not accepted, trying another request, try nº %i",reg_sent);
+                }
+            }else{
+                if(strcmp(client_state,"WAIT_ACK_REG")==0 && strcmp(get_state_into_str(recivePackage.type),"REG_ACK")==0){
+                    change_client_state("WAIT_ACK_INFO");
+                    save_server_data(recivePackage);
+                    char data[61];
+                    strcat(data,clientConfiguration.local_TCP_port);
+                    strcat(data,",");
+                    for(int i = 0;i < 5;i++){
+                        strcat(data,clientConfiguration.params[i]);
+                        strcat(data,";");
+                    }
+                    //Construir data pack
+                    struct UDP info_packet = mountPdu(REG_INFO,clientConfiguration.clientID,server.ServerId,data);
+                }
             }
         }
     }
-     */
-    struct UDP registerReq;
-    registerReq = mountPduRequest();
-    send_package_udp(registerReq);
-    change_client_state("WAIT_ACK_REG");
-    struct UDP recivePackage = recive_package_UDP();
-    printf("%s",recivePackage.data);
+
+
     close(allSockets.udp_socket);
-    exit(-1);
+}
+
+void save_server_data(struct UDP recivedPackage){
+    strcpy(server.ServerId,recivedPackage.idTransmissor);
+    strcpy(server.ServerCommunication,recivedPackage.idCommunication);
+    strcpy(server.tcp_port,recivedPackage.data);
 }
 
 void change_client_state(char *newState){

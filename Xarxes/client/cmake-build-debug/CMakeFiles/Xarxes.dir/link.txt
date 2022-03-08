@@ -1,0 +1,1 @@
+/usr/bin/cc -g CMakeFiles/Xarxes.dir/client.c.o -o Xarxes 

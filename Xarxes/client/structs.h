@@ -27,6 +27,8 @@ struct Sockets{
     struct sockaddr_in tcp_addr_server;
 };
 
-struct Client{
-    int unsucssesful_singUps;
+struct Server{
+    char ServerId[10];
+    char ServerCommunication[10];
+    char tcp_port[4];
 };

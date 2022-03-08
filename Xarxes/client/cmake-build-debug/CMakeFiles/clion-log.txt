@@ -1,10 +1,4 @@
 /var/lib/snapd/snap/clion/180/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/marcfarranabad/Escritorio/Universidad/Xarxes/client
--- The C compiler identification is GNU 11.2.1
--- Detecting C compiler ABI info
--- Detecting C compiler ABI info - done
--- Check for working C compiler: /usr/bin/cc - skipped
--- Detecting C compile features
--- Detecting C compile features - done
 -- Configuring done
 -- Generating done
 -- Build files have been written to: /home/marcfarranabad/Escritorio/Universidad/Xarxes/client/cmake-build-debug
