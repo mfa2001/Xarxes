@@ -35,13 +35,12 @@ void change_client_state(char *newState);
 void send_package_udp(struct UDP request,char *port);
 struct UDP recive_package_UDP(int max_timeout);
 void save_server_data(struct UDP recivedPackage);
-void* keep_alive();
+void *keep_alive();
 bool checkAlivePackage(struct UDP recivedAlivePackage);
 bool checkServerInfo(struct UDP recivedServerPackage);
 
 
 int main(int argc, const char* argv[]){
-    struct UDP test;
     setupData(argc,argv);
 
     //Start with register
@@ -129,6 +128,7 @@ unsigned char get_state_into_unChar(char *state){
     }else if(strcmp(state,"REG_ACK")==0){
         state_type = (unsigned char) 0xa1;
     }
+    return state_type;
 }
 
 char* get_state_into_str(unsigned char state){
@@ -219,7 +219,6 @@ struct UDP mountPdu(unsigned char type, char* IdTransmissor, char* IdCommunicati
 
 void connection(){
     client.unsucssesful_singUps = 0;
-    fd_set rfds;
     while(client.unsucssesful_singUps < o){
         int max_timeout = t;
         if(clientConfiguration.debug == 1){
@@ -364,7 +363,6 @@ struct UDP recive_package_UDP(int max_timeout){
 }
 
 void * keep_alive(){
-    struct timeval timeout;
     int aliveNotConsec = 0;
     while (1) {
         if(aliveNotConsec > s){

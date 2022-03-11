@@ -49,8 +49,8 @@
 	"kind" : "codemodel",
 	"paths" : 
 	{
-		"build" : "/home/marcfarranabad/Escritorio/Universidad/Xarxes/client/cmake-build-debug",
-		"source" : "/home/marcfarranabad/Escritorio/Universidad/Xarxes/client"
+		"build" : "/home/marcfarranabad/Escritorio/Universidad/Xarxes/Xarxes/client/cmake-build-debug",
+		"source" : "/home/marcfarranabad/Escritorio/Universidad/Xarxes/Xarxes/client"
 	},
 	"version" : 
 	{
