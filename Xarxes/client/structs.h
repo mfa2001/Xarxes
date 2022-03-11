@@ -2,11 +2,11 @@
 // Created by mfarr on 23/02/2022.
 //
 struct ClientConfig{
-    char clientID[10];
+    char clientID[11];
     char params[5][15]; //Make it tuple
-    char local_TCP_port[4];
+    char local_TCP_port[5];
     char *server_adress;
-    char server_UDP_port[4];
+    char server_UDP_port[5];
     int debug;
 };
 
@@ -28,7 +28,12 @@ struct Sockets{
 };
 
 struct Server{
-    char ServerId[10];
-    char ServerCommunication[10];
+    char ServerId[11];
+    char ServerCommunication[11];
+    char udp_port[4];
     char tcp_port[4];
+};
+
+struct Client{
+    int unsucssesful_singUps;
 };

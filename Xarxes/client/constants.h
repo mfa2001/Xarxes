@@ -20,9 +20,16 @@
 #define REGISTERED 0xf5
 #define SEND_ALIVE 0xf6
 
+#define ALIVE 0xb0
+#define ALIVE_NACK 0xb1
+#define ALIVE_REJ 0xb2
+
 #define t 1
 #define u 2
 #define n 8
 #define o 3
 #define p 2
 #define q 4
+#define v 2
+#define r 2;
+#define s 3
