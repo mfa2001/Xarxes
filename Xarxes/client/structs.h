@@ -16,6 +16,15 @@ struct UDP{
     char data[61];
 };
 
+struct TCP{
+    unsigned char type;
+    char id_transmisor[11];
+    char id_comunicacio[11];
+    char element[8];
+    char valor[16];
+    char info[80];
+};
+
 struct Server{
     char ServerId[11];
     char ServerCommunication[11];
@@ -34,6 +43,8 @@ struct Sockets{
 
     int tcp_listening_socket;
     struct sockaddr_in tcp_listening_addr_server;
+
+    int socket_for_new_accept;
 };
 
 struct Client{
@@ -43,13 +54,4 @@ struct Client{
 struct Elements{
     char strElem[15];
     char valElem[16];
-};
-
-struct TCP{
-    unsigned char type;
-    char id_transmisor[11];
-    char id_comunicacio[11];
-    char element[8];
-    char valor[16];
-    char info[80];
 };

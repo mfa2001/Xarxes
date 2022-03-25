@@ -442,13 +442,54 @@ void * keep_alive(){
 }
 
 void threat_listening_commands() {
+    struct TCP send_listenig;
+    if(clientConfiguration.debug==1){
+        printf("Client listening for commands\n");
+    }
     while (1) {
         while(strcmp(client_state,"SEND_ALIVE")==0) {
             struct TCP recv_list = listening();
-            if (strcmp(get_state_into_str(recv_list.type), "GET_DATA")) {
-                printf("GETDATA CORRECT");
-            } else {
-                printf("Recivimos");
+            if (strcmp(get_state_into_str(recv_list.type),"GET_DATA")==0) {
+                int i = 0;
+                while(i>=5 || strcmp(&arr_elem[i].strElem[0],"\0")!=0){
+                    if(strcmp(recv_list.element,arr_elem[i].strElem)==0){
+                        send_listenig = mountTcp(DATA_ACK,arr_elem[i].strElem);
+                        write(allSockets.socket_for_new_accept,&send_listenig,sizeof(send_listenig));
+                        if(clientConfiguration.debug==1){
+                            printf("Sended element correctly\n");
+                        }
+                        break;
+                    }else{
+                        i++;
+                    }
+                }
+            } else if(strcmp(get_state_into_str(recv_list.type),"SET_DATA")==0){
+                int i = 0;
+                int j = 0;
+                while(i>=5 || strcmp(&arr_elem[i].strElem[0],"\0")!=0) {
+                    if (strcmp(recv_list.element, arr_elem[i].strElem) == 0) {
+                        while(strcmp(&arr_elem[i].strElem[j],"\0")!=0){
+                            if(strcmp(&arr_elem[i].strElem[j],"I")==0){
+                                strcpy(arr_elem[i].valElem,recv_list.valor);
+                                send_listenig = mountTcp(DATA_ACK,arr_elem[i].strElem);
+                                write(allSockets.socket_for_new_accept,&send_listenig,sizeof(send_listenig));
+                                if(clientConfiguration.debug==1){
+                                    printf("Setted new value correctly\n");
+                                }
+                                break;
+                            }else{
+                                j++;
+                            }
+                        }
+                        if(strcmp(arr_elem[i].valElem,recv_list.valor)==0){
+                            break;
+                        }
+                    }else{
+                        i++;
+                    }
+                }
+            }else{
+                printf("ERROR package type not recognized");
             }
         }
     }
@@ -457,24 +498,23 @@ void threat_listening_commands() {
 struct TCP listening(){
 
     struct TCP *recvListenignPacket = malloc(sizeof (struct TCP));
-    if(clientConfiguration.debug == 1){
-        printf("WAITING FOR COMMANDS FROM SERVER\n");
-    }
+
     listen(allSockets.tcp_listening_socket,5);
     socklen_t sizeaddr = sizeof(allSockets.tcp_listening_addr_server);
-    int newsock = accept(allSockets.tcp_listening_socket,(struct sockaddr *)&allSockets.tcp_listening_addr_server,&sizeaddr);
-    char *buff = malloc(sizeof(struct TCP));
-    if(newsock > 0){
+    allSockets.socket_for_new_accept = accept(allSockets.tcp_listening_socket,(struct sockaddr *)&allSockets.tcp_listening_addr_server,&sizeaddr);
+    char *buffer = malloc(sizeof (struct TCP));
+    if(allSockets.socket_for_new_accept > 0){
 
-        if(read(newsock,buff,sizeof(buff))<0){
+        if(read(allSockets.socket_for_new_accept,buffer,sizeof(struct TCP))<0){
             printf("ERROR reading into listening commands");
             recvListenignPacket->type = ERROR;
             return *recvListenignPacket;
         }else{
-            recvListenignPacket = (struct TCP *) buff;
+            recvListenignPacket = (struct TCP *)buffer;
             return *recvListenignPacket;
         }
     }else{
+        printf("Error cannot create socket for reading");
         recvListenignPacket->type = ERROR;
         return *recvListenignPacket;
     }
@@ -498,7 +538,7 @@ struct TCP mountTcp(unsigned char type,char *elemId){
     strcpy(send_data.id_transmisor,clientConfiguration.clientID);
     strcpy(send_data.id_comunicacio,server.ServerCommunication);
     strcpy(send_data.element,elemId);
-    while(strcmp(elemId,arr_elem[i].strElem)==0){
+    while(strcmp(elemId,arr_elem[i].strElem)!=0){
         i++;
     }
     strcpy(send_data.valor,arr_elem[i].valElem);
@@ -530,7 +570,7 @@ void commandSystem(){
             }
             split = strtok(buffIn," ");
             if(strcmp(split,"stat")==0) {
-                while(strcmp(&arr_elem[i].strElem[0],"\0")!=0){
+                while(i>=5 || strcmp(&arr_elem[i].strElem[0],"\0")!=0){
                     printf("Name: %s  ",arr_elem[i].strElem);
                     printf("Value: %s\n",arr_elem[i].valElem);
                     i++;
@@ -541,7 +581,7 @@ void commandSystem(){
                 if(split == NULL){
                     printf("ERROR, no arguments,use set <param_name> <param_value>\n");
                 }else {
-                    while (strcmp(&arr_elem[i].strElem[0], "\0") != 0) {
+                    while (i>=5 || strcmp(&arr_elem[i].strElem[0], "\0") != 0) {
                         if (strcmp(arr_elem[i].strElem, split) == 0) {
                             split = strtok(NULL, " ");
                             if (split == NULL) {
@@ -556,7 +596,7 @@ void commandSystem(){
                             i++;
                         }
                     }
-                    if(strcmp(&arr_elem[i].strElem[0],"\0")==0){
+                    if(i>=5){
                         printf("ERROR didn't recognize this element\n");
                     }
                 }
@@ -565,7 +605,7 @@ void commandSystem(){
                 if(split == NULL){
                     printf("ERROR, no arguments,use send <param_name>\n");
                 }else{
-                    while (strcmp(&arr_elem[i].strElem[0], "\0") != 0) {
+                    while (i>=5 || strcmp(&arr_elem[i].strElem[0], "\0") != 0) {
                         if (strcmp(arr_elem[i].strElem, split) == 0) {
                             command_send(split);
                             break;
@@ -573,7 +613,7 @@ void commandSystem(){
                             i++;
                         }
                     }
-                    if(strcmp(&arr_elem[i].strElem[0],"\0")==0){
+                    if(i>=5){
                         printf("ERROR didn't recognize this element\n");
                     }
                 }
@@ -592,7 +632,6 @@ void command_send(char *elemId){
     struct TCP send_package = mountTcp(SEND_DATA,elemId);
     send_package_tcp(send_package);
     struct TCP recived_package = recive_package_TCP(m);
-    printf("%s",recived_package.info);
 }
 
 struct TCP recive_package_TCP(int max_timeout){
