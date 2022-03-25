@@ -2,56 +2,72 @@
 // Created by mfarr on 21/02/2022.
 //
 
-//Server file
+//client file
 #include "netinet/in.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 #include "constants.h"
 #include "structs.h"
-#include "netdb.h"
+#include <netdb.h>
 #include "unistd.h"
-#include <pthread.h>
+#include <threads.h>
 #include <stdbool.h>
+#include <sys/time.h>
+#include <time.h>
+#include <arpa/inet.h>
 
-#define LONGDADES 100
+#define BUFFSIZE 250
 
 //Global variable
 struct ClientConfig clientConfiguration;
 char* client_state = NULL;
 struct Sockets allSockets;
 struct Server server;
-pthread_t idThread = (pthread_t) NULL;
+thrd_t threads[4];
 struct Client client;
+struct Elements arr_elem[5];
 
-void readClientConfig(FILE *file,int debug);
-char* splitLast(char split[]);
-void setupData(int argc,const char* argv[]);
-void setup_udp_socket(char* udpPort);
-struct UDP mountPdu(unsigned char type, char* IdTransmissor, char* IdCommunication, char* Data);
-void connection();
-unsigned char get_state_into_unChar(char *state);
-void change_client_state(char *newState);
-void send_package_udp(struct UDP request,char *port);
-struct UDP recive_package_UDP(int max_timeout);
-void save_server_data(struct UDP recivedPackage);
-void *keep_alive();
 bool checkAlivePackage(struct UDP recivedAlivePackage);
 bool checkServerInfo(struct UDP recivedServerPackage);
+char* splitLast(char split[]);
+unsigned char get_state_into_unChar(char *state);
+struct UDP mountPdu(unsigned char type, char* IdTransmissor, char* IdCommunication, char* Data);
+struct UDP recive_package_UDP(int max_timeout);
+struct TCP mountTcp(unsigned char type,char *elemId);
+struct TCP recive_package_TCP(int max_timeout);
+struct TCP listening();
+void *keep_alive();
+void readClientConfig(FILE *file,int debug);
+void setupData(int argc,const char* argv[]);
+void setup_udp_socket(char* udpPort);
+void connection();
+void change_client_state(char *newState);
+void send_package_udp(struct UDP request,char *port);
+void save_server_data(struct UDP recivedPackage);
+void commandSystem();
+void setup_tcp_socket();
+void send_package_tcp(struct TCP request);
+void command_send(char *elemId);
+void setup_socket_for_listening();
+void threat_listening_commands();
 
 
 int main(int argc, const char* argv[]){
     setupData(argc,argv);
-
-    //Start with register
     change_client_state("NOT_REGISTERED");
     setup_udp_socket(clientConfiguration.server_UDP_port);
     connection();
-    //Send Alive
-    pthread_create(&idThread,NULL,keep_alive(),NULL);
-
-
+    while(1){
+        if(strcmp(client_state,"SEND_ALIVE")){
+            break;
+        }
+    }
+    setup_socket_for_listening();
+    thrd_create(&threads[1],(thrd_start_t)threat_listening_commands,NULL);
+    commandSystem();
 }
+
 void setupData(int argc,const char* argv[]){
     int debug = 0;
     FILE *config_file = NULL;
@@ -93,7 +109,8 @@ void readClientConfig(FILE *file,int debug){
             param = strtok(lastParams, ";");
             int i = 0;
             while (param != NULL) {
-                strcpy(clientConfiguration.params[i], param);
+                strcpy(arr_elem[i].strElem, param);
+                strcpy(arr_elem[i].valElem,"NONE");
                 param = strtok(NULL, ";");
                 i++;
             }
@@ -119,16 +136,6 @@ char *splitLast(char split[]) {
         split = strtok(NULL, " ");
     }
     return split;
-}
-
-unsigned char get_state_into_unChar(char *state){
-    unsigned char state_type;
-    if(strcmp(state,"REG_REQ")==0){
-        state_type = (unsigned char) 0xa0;
-    }else if(strcmp(state,"REG_ACK")==0){
-        state_type = (unsigned char) 0xa1;
-    }
-    return state_type;
 }
 
 char* get_state_into_str(unsigned char state){
@@ -169,6 +176,20 @@ char* get_state_into_str(unsigned char state){
         strState = "ALIVE_NACK";
     }else if(state == (unsigned char) 0xb2){
         strState = "ALIVE_REJ";
+    }else if(state == (unsigned char) 0xc0) {
+        strState = "SEND_DATA";
+    }else if(state == (unsigned char) 0xc0) {
+        strState = "SEND_DATA";
+    }else if(state == (unsigned char) 0xc1) {
+        strState = "DATA_ACK";
+    }else if(state == (unsigned char) 0xc2) {
+        strState = "DATA_NACK";
+    }else if(state == (unsigned char) 0xc3) {
+        strState = "DATA_REJ";
+    }else if(state == (unsigned char) 0xc4) {
+        strState = "SET_DATA";
+    }else if(state == (unsigned char) 0xc5){
+        strState = "GET_DATA";
     }else{
         strState="ERROR";
     }
@@ -179,11 +200,10 @@ void setup_udp_socket(char* udpPort){
     //create sockets
 
     struct hostent *ent;
-
     ent = gethostbyname(clientConfiguration.server_adress);
     if(!ent){
         printf("ERROR, can not take host name\n");
-        exit(-1);
+        exit(0);
     }
 
     allSockets.udp_socket = socket(AF_INET, SOCK_DGRAM,0);
@@ -211,7 +231,7 @@ void setup_udp_socket(char* udpPort){
 struct UDP mountPdu(unsigned char type, char* IdTransmissor, char* IdCommunication, char* Data){
     struct UDP regReq;
     regReq.type = (unsigned char) type;
-    strcpy(regReq.idTransmissor,IdTransmissor); // Not passing correctly
+    strcpy(regReq.idTransmissor,IdTransmissor);
     strcpy(regReq.idCommunication,IdCommunication);
     strcpy(regReq.data,Data);
     return regReq;
@@ -228,7 +248,9 @@ void connection(){
             struct UDP registerReq;
             registerReq = mountPdu(REG_REQ,clientConfiguration.clientID,"0000000000","");
             send_package_udp(registerReq,clientConfiguration.server_UDP_port);
-            change_client_state("WAIT_ACK_REG");
+            if(strcmp(client_state,"WAIT_ACK_REG")!=0){
+                change_client_state("WAIT_ACK_REG");
+            }
             struct UDP recivePackage = recive_package_UDP(max_timeout);
 
             if(strcmp(get_state_into_str(recivePackage.type),"REG_REJ")==0){
@@ -247,7 +269,7 @@ void connection(){
                 if(clientConfiguration.debug==1){
                     printf("ERROR time %i exceeded, trying again, try %i\n",max_timeout,reg_sent+1);
                 }
-                change_client_state("NOT_REGISTERED");
+                //change_client_state("NOT_REGISTERED");
             }else{
                 if(strcmp(client_state,"WAIT_ACK_REG")==0 && strcmp(get_state_into_str(recivePackage.type),"REG_ACK")==0){
                     change_client_state("WAIT_ACK_INFO");
@@ -256,8 +278,8 @@ void connection(){
                     strcpy(data,clientConfiguration.local_TCP_port);
                     strcat(data,",");
                     for(int i = 0;i < 5;i++){
-                        strcat(data,clientConfiguration.params[i]);
-                        if(strcmp(&clientConfiguration.params[i+1][0],"\0")==0){
+                        strcat(data,arr_elem[i].strElem);
+                        if(strcmp(&arr_elem[i].strElem[0],"\0")==0){
 
                             break;
                         }
@@ -298,6 +320,7 @@ void connection(){
             }
         }
         if(strcmp(client_state,"REGISTERED")==0){
+            thrd_create(&threads[0],(thrd_start_t) keep_alive,NULL);
             break;
         }
         if(client.unsucssesful_singUps == o-1){
@@ -335,82 +358,125 @@ void send_package_udp(struct UDP request,char* port){
 }
 
 struct UDP recive_package_UDP(int max_timeout){
+    struct timeval tv;
+    tv.tv_sec = max_timeout;
+    tv.tv_usec = 0;
     struct UDP *recivedPackage = malloc(sizeof (struct UDP));
-    struct timeval timeout;
-    fd_set rfds;
-    FD_ZERO(&rfds);
-    FD_SET(allSockets.udp_socket,&rfds);
-    timeout.tv_sec = t;
-    timeout.tv_usec = 0;
-    select(allSockets.udp_socket+1,&rfds,NULL,NULL,&timeout);
-    if(FD_ISSET(allSockets.udp_socket,&rfds)){
-        char *buf = malloc(sizeof(struct UDP));
-        int a = recvfrom(allSockets.udp_socket,buf,sizeof(struct UDP),0,
-                         (struct sockaddr *)0,(socklen_t *)0);
-        if(a<0) {
-            if (clientConfiguration.debug == 1) {
-                printf("ERROR Cannot recive a message\n");
-            }
-            exit(-1);
-        }
-        recivedPackage = (struct UDP *) buf;
-    }else{
+    //Its not adding correctly the timeout
+    if(setsockopt(allSockets.udp_socket,SOL_SOCKET,SO_RCVTIMEO,&tv,sizeof(tv))<0){
+        printf("ERROR");
+    }
+    char *buf = malloc(sizeof(struct UDP));
+    int a = recvfrom(allSockets.udp_socket,buf,sizeof(struct UDP),0,
+                     (struct sockaddr *)0,(socklen_t *)0);
+    if(a<0) {
         recivedPackage->type = ERROR;
+        return *recivedPackage;
+    }else{
+        recivedPackage = (struct UDP *) buf;
         return *recivedPackage;
     }
 
-    return *recivedPackage;
 }
 
 void * keep_alive(){
     int aliveNotConsec = 0;
     while (1) {
-        if(aliveNotConsec > s){
-            printf("ERROR didn't recived 3 alive consecutly, retrying register");
+        if(aliveNotConsec > s-1){
+            printf("ERROR didn't recived 3 alive consecutly, retrying register\n\n");
             change_client_state("NOT_REGISTERED");
             client.unsucssesful_singUps++;
+            close(allSockets.tcp_socket);
+            close(allSockets.tcp_listening_socket);
             connection();
-            pthread_cancel(idThread);
+            thrd_exit(EXIT_FAILURE);
+
         }
         int time = r;
         struct UDP alivePacket = mountPdu(ALIVE,clientConfiguration.clientID,server.ServerCommunication,"");
         send_package_udp(alivePacket,clientConfiguration.server_UDP_port);
         struct UDP recivedAlivePacket = recive_package_UDP(time*v);
-        if(!checkAlivePackage(recivedAlivePacket)){
-            printf("ERROR suplantation identity\n");
-            change_client_state("NOT_REGISTERED");
-            client.unsucssesful_singUps++;
-            connection();
-            pthread_exit(&idThread);
-        }
-        if(strcmp(get_state_into_str(recivedAlivePacket.type),"ALIVE_REJ")==0){
-            printf("Packet Rejected, trying sing up again\n");
-            change_client_state("NOT_REGISTERED");
-            client.unsucssesful_singUps++;
-            connection();
-            pthread_exit(&idThread);
-        }else if(strcmp(get_state_into_str(recivedAlivePacket.type),"ERROR")==0){
-            if(strcmp(client_state,"REGISTERED")==0){
+        if(strcmp(get_state_into_str(recivedAlivePacket.type),"ERROR")==0) {
+            if (strcmp(client_state, "REGISTERED") == 0) {
                 printf("ERROR didn't recived first Alive\n");
                 change_client_state("NOT_REGISTERED");
                 client.unsucssesful_singUps++;
                 connection();
-                pthread_exit(&idThread);
+                close(allSockets.tcp_socket);
+                close(allSockets.tcp_listening_socket);
+                thrd_exit(EXIT_FAILURE);
             }
-            if(clientConfiguration.debug == 1){
-                printf("Not recived alive packet");
+            if (clientConfiguration.debug == 1) {
+                printf("Not recived alive packet\n");
                 aliveNotConsec++;
             }
+        }else if(!checkAlivePackage(recivedAlivePacket)){
+            printf("ERROR suplantation identity\n");
+            change_client_state("NOT_REGISTERED");
+            client.unsucssesful_singUps++;
+            connection();
+            close(allSockets.tcp_socket);
+            close(allSockets.tcp_listening_socket);
+            thrd_exit(EXIT_FAILURE);
+        }else if(strcmp(get_state_into_str(recivedAlivePacket.type),"ALIVE_REJ")==0){
+            printf("Packet Rejected, trying sing up again\n");
+            change_client_state("NOT_REGISTERED");
+            client.unsucssesful_singUps++;
+            connection();
+            close(allSockets.tcp_socket);
+            close(allSockets.tcp_listening_socket);
+            thrd_exit(EXIT_FAILURE);
         }else{
             if(strcmp(client_state,"REGISTERED")==0 || strcmp(client_state,"SEND_ALIVE")==0){
                 if(strcmp(client_state,"REGISTERED")==0){
                     change_client_state("SEND_ALIVE");
                     //obrir socket tcp
+                    //create thread for listening
                     aliveNotConsec = 0;
                 }
+                aliveNotConsec = 0;
             }
         }
         sleep(v);
+    }
+}
+
+void threat_listening_commands() {
+    while (1) {
+        while(strcmp(client_state,"SEND_ALIVE")==0) {
+            struct TCP recv_list = listening();
+            if (strcmp(get_state_into_str(recv_list.type), "GET_DATA")) {
+                printf("GETDATA CORRECT");
+            } else {
+                printf("Recivimos");
+            }
+        }
+    }
+}
+
+struct TCP listening(){
+
+    struct TCP *recvListenignPacket = malloc(sizeof (struct TCP));
+    if(clientConfiguration.debug == 1){
+        printf("WAITING FOR COMMANDS FROM SERVER\n");
+    }
+    listen(allSockets.tcp_listening_socket,5);
+    socklen_t sizeaddr = sizeof(allSockets.tcp_listening_addr_server);
+    int newsock = accept(allSockets.tcp_listening_socket,(struct sockaddr *)&allSockets.tcp_listening_addr_server,&sizeaddr);
+    char *buff = malloc(sizeof(struct TCP));
+    if(newsock > 0){
+
+        if(read(newsock,buff,sizeof(buff))<0){
+            printf("ERROR reading into listening commands");
+            recvListenignPacket->type = ERROR;
+            return *recvListenignPacket;
+        }else{
+            recvListenignPacket = (struct TCP *) buff;
+            return *recvListenignPacket;
+        }
+    }else{
+        recvListenignPacket->type = ERROR;
+        return *recvListenignPacket;
     }
 }
 
@@ -424,9 +490,160 @@ bool checkServerInfo(struct UDP recivedServerPackage){
     return (strcmp(recivedServerPackage.idTransmissor,server.ServerId)==0 &&
             strcmp(recivedServerPackage.idCommunication,server.ServerCommunication)==0);
 }
+struct TCP mountTcp(unsigned char type,char *elemId){
+    struct TCP send_data;
+    int i = 0;
+
+    send_data.type = (unsigned char) type;
+    strcpy(send_data.id_transmisor,clientConfiguration.clientID);
+    strcpy(send_data.id_comunicacio,server.ServerCommunication);
+    strcpy(send_data.element,elemId);
+    while(strcmp(elemId,arr_elem[i].strElem)==0){
+        i++;
+    }
+    strcpy(send_data.valor,arr_elem[i].valElem);
+    time_t timenow;
+    time(&timenow);
+    strcpy(send_data.info,ctime(&timenow));
+    return send_data;
+}
+
+void send_package_tcp(struct TCP request){
+    setup_tcp_socket();
+    if(write(allSockets.tcp_socket,&request,sizeof (request))==-1){
+        printf("ERROR al escribir en socket");
+    }
+}
 
 void commandSystem(){
-    while(strcmp(client_state,"SEND_ALIVE")==0){
+    char buffIn[BUFFSIZE+2];
+    char *split;
+    int i;
+    while(1){
+        while(strcmp(client_state,"SEND_ALIVE")==0) {
+            i = 0;
+            fgets((char*)buffIn,BUFFSIZE,stdin);
 
+            char *c = strchr(buffIn, '\n');
+            if (c) {
+                *c = '\0';
+            }
+            split = strtok(buffIn," ");
+            if(strcmp(split,"stat")==0) {
+                while(strcmp(&arr_elem[i].strElem[0],"\0")!=0){
+                    printf("Name: %s  ",arr_elem[i].strElem);
+                    printf("Value: %s\n",arr_elem[i].valElem);
+                    i++;
+                }
+            }else if(strcmp(split,"set")==0){
+                split = strtok(NULL," ");
+                i = 0;
+                if(split == NULL){
+                    printf("ERROR, no arguments,use set <param_name> <param_value>\n");
+                }else {
+                    while (strcmp(&arr_elem[i].strElem[0], "\0") != 0) {
+                        if (strcmp(arr_elem[i].strElem, split) == 0) {
+                            split = strtok(NULL, " ");
+                            if (split == NULL) {
+                                printf("ERROR with arguments use a valid <param_name> <param_value>\n");
+                                break;
+                            }else{
+                                strcpy(arr_elem[i].valElem, split);
+                                printf("Changed value\n");
+                                break;
+                            }
+                        } else {
+                            i++;
+                        }
+                    }
+                    if(strcmp(&arr_elem[i].strElem[0],"\0")==0){
+                        printf("ERROR didn't recognize this element\n");
+                    }
+                }
+            }else if(strcmp(split,"send")==0){
+                split = strtok(NULL," ");
+                if(split == NULL){
+                    printf("ERROR, no arguments,use send <param_name>\n");
+                }else{
+                    while (strcmp(&arr_elem[i].strElem[0], "\0") != 0) {
+                        if (strcmp(arr_elem[i].strElem, split) == 0) {
+                            command_send(split);
+                            break;
+                        }else{
+                            i++;
+                        }
+                    }
+                    if(strcmp(&arr_elem[i].strElem[0],"\0")==0){
+                        printf("ERROR didn't recognize this element\n");
+                    }
+                }
+            }else if(strcmp(buffIn,"quit")==0){
+                close(allSockets.tcp_socket);
+                exit(-1);
+            }else{
+                printf("Command ERROR try again\n");
+            }
+
+        }
+        //waiting for state send alive
+    }
+}
+void command_send(char *elemId){
+    struct TCP send_package = mountTcp(SEND_DATA,elemId);
+    send_package_tcp(send_package);
+    struct TCP recived_package = recive_package_TCP(m);
+    printf("%s",recived_package.info);
+}
+
+struct TCP recive_package_TCP(int max_timeout){
+    struct timeval tv;
+    tv.tv_sec = max_timeout;
+    tv.tv_usec = 0;
+    struct TCP *recivedPackage = malloc(sizeof (struct TCP));
+    //Its not adding correctly the timeout
+    if(setsockopt(allSockets.udp_socket,SOL_SOCKET,SO_RCVTIMEO,&tv,sizeof(tv))<0){
+        printf("ERROR");
+    }
+    char *buf = malloc(sizeof(struct TCP));
+    read(allSockets.tcp_socket,buf,sizeof (struct TCP));
+    recivedPackage = (struct TCP *) buf;
+    return *recivedPackage;
+}
+
+void setup_tcp_socket(){
+
+    struct in_addr* server_addr;
+
+
+    allSockets.tcp_socket = socket(AF_INET,SOCK_STREAM,0);
+    if(allSockets.tcp_socket<0){
+        printf("Socket create wrong");
+    }
+
+    server_addr = (struct in_addr *)(gethostbyname((const char *)clientConfiguration.server_adress)->h_addr_list[0]);
+
+    memset(&allSockets.tcp_addr_server,0,sizeof (struct sockaddr_in));
+    allSockets.tcp_addr_server.sin_family = AF_INET;
+    allSockets.tcp_addr_server.sin_addr.s_addr = server_addr->s_addr;
+    allSockets.tcp_addr_server.sin_port = htons(atoi(server.tcp_port));
+
+    if(connect(allSockets.tcp_socket,(struct sockaddr *) &allSockets.tcp_addr_server,sizeof (allSockets.tcp_addr_server))<0){
+        printf("ERROR connecting tcp socket\n");
+        exit(-1);
+    }
+}
+void setup_socket_for_listening(){
+    allSockets.tcp_listening_socket = socket(AF_INET,SOCK_STREAM,0);
+    if(allSockets.tcp_listening_socket<0){
+        printf("Socket create wrong");
+    }
+    memset(&allSockets.tcp_listening_addr_server,0,sizeof (struct sockaddr_in));
+    allSockets.tcp_listening_addr_server.sin_addr.s_addr = htonl(INADDR_ANY); // <-- AQUI FALLA
+    allSockets.tcp_listening_addr_server.sin_port = htons(atoi(clientConfiguration.local_TCP_port));
+    allSockets.tcp_listening_addr_server.sin_family=AF_INET;
+
+    if(bind(allSockets.tcp_listening_socket,(struct sockaddr *) &allSockets.tcp_listening_addr_server,sizeof (allSockets.tcp_listening_addr_server))<0){
+        printf("ERROR binding tcp listening socket\n");
+        exit(-1);
     }
 }

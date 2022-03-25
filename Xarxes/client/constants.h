@@ -24,6 +24,13 @@
 #define ALIVE_NACK 0xb1
 #define ALIVE_REJ 0xb2
 
+#define SEND_DATA 0xc0
+#define DATA_ACK 0xc1
+#define DATA_NACK 0xc2
+#define DATA_REJ 0xc3
+#define SET_DATA 0xc4
+#define GET_DATA 0xc5
+
 #define t 1
 #define u 2
 #define n 8
@@ -31,5 +38,6 @@
 #define p 2
 #define q 4
 #define v 2
-#define r 2;
+#define r 2
 #define s 3
+#define m 3
