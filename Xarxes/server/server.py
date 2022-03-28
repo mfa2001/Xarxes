@@ -1,6 +1,7 @@
 # Server File
 import sys
-
+serverConfigure = None
+debug = False
 
 class ConfigFile:
     def __init__(self, ID, udpPort, tcpPort) -> None:
@@ -10,40 +11,42 @@ class ConfigFile:
         self.TCP_port = tcpPort
 
 
-def read(serverFile, debuger):
+def readFromFile(serverFile):
     config_file = open(serverFile, "r")
+    id_server = udp_port = tcp_port = ""
     # Read operation from file
-    for line in config_file:
+    read_line = config_file.readlines()
+    for line in read_line:
         try:
             operator = line.split()
             if operator[0] == "Id":
-                id = operator[2]
-            if operator[0] == "UDP-port":
+                id_server = operator[2]
+            elif operator[0] == "UDP-port":
                 udp_port = operator[2]
-            if operator[0] == "TCP-port":
+            elif operator[0] == "TCP-port":
                 tcp_port = operator[2]
         except:
             pass
-    if debuger == 1:
+    if debug:
         print("Configuration added correclty")
-    return ConfigFile(id, udp_port, tcp_port)
+    return ConfigFile(id_server, udp_port, tcp_port)
 
+def parseArg():
+    file = "server.cfg"
+    if len(sys.argv) > 1:
+        for arg in range(len(sys.argv)):
+            if sys.argv[arg] == "-d":
+                global debug
+                debug = True
+            elif sys.argv[arg] == "-c":
+                file = sys.argv[arg+1]
+    global serverConfigure
+    serverConfigure = readFromFile(file)
 
 def start():
     pass
 
 
 if __name__ == "__main__":
-    file = "server.cfg"
-    debug = 0
-    if len(sys.argv) > 1:
-        for arg in range(len(sys.argv)):
-            if arg == 0:
-                pass
-            elif sys.argv[arg] == "-d":
-                debug = 1
-            elif sys.argv[arg] == "-c":
-                file = sys.argv[arg+1]
-    configServer = read(file, debug)
-
+    parseArg()
     start()
