@@ -15,7 +15,6 @@
 #include <stdbool.h>
 #include <sys/time.h>
 #include <time.h>
-#include <arpa/inet.h>
 
 #define BUFFSIZE 250
 
@@ -30,11 +29,12 @@ struct Elements arr_elem[5];
 
 bool checkAlivePackage(struct UDP recivedAlivePackage);
 bool checkServerInfo(struct UDP recivedServerPackage);
+bool checkDataInfoRecivedListening(struct TCP recivedListening);
 char* splitLast(char split[]);
 unsigned char get_state_into_unChar(char *state);
 struct UDP mountPdu(unsigned char type, char* IdTransmissor, char* IdCommunication, char* Data);
 struct UDP recive_package_UDP(int max_timeout);
-struct TCP mountTcp(unsigned char type,char *elemId);
+struct TCP mountTcp(unsigned char type,char *elemId, char *info);
 struct TCP recive_package_TCP(int max_timeout);
 struct TCP listening();
 void *keep_alive();
@@ -54,6 +54,7 @@ void threat_listening_commands();
 
 
 int main(int argc, const char* argv[]){
+    client.unsucssesful_singUps = 0;
     setupData(argc,argv);
     change_client_state("NOT_REGISTERED");
     setup_udp_socket(clientConfiguration.server_UDP_port);
@@ -63,7 +64,6 @@ int main(int argc, const char* argv[]){
             break;
         }
     }
-    setup_socket_for_listening();
     thrd_create(&threads[1],(thrd_start_t)threat_listening_commands,NULL);
     commandSystem();
 }
@@ -87,7 +87,6 @@ void setupData(int argc,const char* argv[]){
     }
     readClientConfig(config_file,debug);
 }
-
 
 void readClientConfig(FILE *file,int debug){
     char line[50];
@@ -238,10 +237,10 @@ struct UDP mountPdu(unsigned char type, char* IdTransmissor, char* IdCommunicati
 }
 
 void connection(){
-    client.unsucssesful_singUps = 0;
     while(client.unsucssesful_singUps < o){
         int max_timeout = t;
         if(clientConfiguration.debug == 1){
+            printf("Trying to Connect number %i\n",client.unsucssesful_singUps);
             //Escribir nuevo intento + numero de trys
         }
         for (int reg_sent = 0; reg_sent < n; reg_sent++){
@@ -254,10 +253,10 @@ void connection(){
             struct UDP recivePackage = recive_package_UDP(max_timeout);
 
             if(strcmp(get_state_into_str(recivePackage.type),"REG_REJ")==0){
-                change_client_state("NOT_REGISTERED");
                 if(clientConfiguration.debug == 1){
                     printf("Package Rejected, trying sign up agains, try nº %i\n",client.unsucssesful_singUps);
                 }
+                change_client_state("NOT_REGISTERED");
                 client.unsucssesful_singUps++;
                 break;
             }else if(strcmp(get_state_into_str(recivePackage.type),"REG_NACK")==0) {
@@ -323,7 +322,7 @@ void connection(){
             thrd_create(&threads[0],(thrd_start_t) keep_alive,NULL);
             break;
         }
-        if(client.unsucssesful_singUps == o-1){
+        if(client.unsucssesful_singUps > o-1){
             printf("ERROR can not conect to the server\n");
             exit(-1);
         }
@@ -386,8 +385,6 @@ void * keep_alive(){
             printf("ERROR didn't recived 3 alive consecutly, retrying register\n\n");
             change_client_state("NOT_REGISTERED");
             client.unsucssesful_singUps++;
-            close(allSockets.tcp_socket);
-            close(allSockets.tcp_listening_socket);
             connection();
             thrd_exit(EXIT_FAILURE);
 
@@ -402,8 +399,6 @@ void * keep_alive(){
                 change_client_state("NOT_REGISTERED");
                 client.unsucssesful_singUps++;
                 connection();
-                close(allSockets.tcp_socket);
-                close(allSockets.tcp_listening_socket);
                 thrd_exit(EXIT_FAILURE);
             }
             if (clientConfiguration.debug == 1) {
@@ -415,16 +410,12 @@ void * keep_alive(){
             change_client_state("NOT_REGISTERED");
             client.unsucssesful_singUps++;
             connection();
-            close(allSockets.tcp_socket);
-            close(allSockets.tcp_listening_socket);
             thrd_exit(EXIT_FAILURE);
         }else if(strcmp(get_state_into_str(recivedAlivePacket.type),"ALIVE_REJ")==0){
             printf("Packet Rejected, trying sing up again\n");
             change_client_state("NOT_REGISTERED");
             client.unsucssesful_singUps++;
             connection();
-            close(allSockets.tcp_socket);
-            close(allSockets.tcp_listening_socket);
             thrd_exit(EXIT_FAILURE);
         }else{
             if(strcmp(client_state,"REGISTERED")==0 || strcmp(client_state,"SEND_ALIVE")==0){
@@ -443,60 +434,76 @@ void * keep_alive(){
 
 void threat_listening_commands() {
     struct TCP send_listenig;
+    setup_socket_for_listening();
+    int existElem;
+    char *elem;
     if(clientConfiguration.debug==1){
         printf("Client listening for commands\n");
     }
     while (1) {
-        while(strcmp(client_state,"SEND_ALIVE")==0) {
+        if(strcmp(client_state,"SEND_ALIVE")==0){
             struct TCP recv_list = listening();
-            if (strcmp(get_state_into_str(recv_list.type),"GET_DATA")==0) {
-                int i = 0;
-                while(i>=5 || strcmp(&arr_elem[i].strElem[0],"\0")!=0){
-                    if(strcmp(recv_list.element,arr_elem[i].strElem)==0){
-                        send_listenig = mountTcp(DATA_ACK,arr_elem[i].strElem);
-                        write(allSockets.socket_for_new_accept,&send_listenig,sizeof(send_listenig));
-                        if(clientConfiguration.debug==1){
-                            printf("Sended element correctly\n");
-                        }
-                        break;
-                    }else{
-                        i++;
-                    }
+            existElem = 0;
+            if(!checkDataInfoRecivedListening(recv_list)){
+                printf("ERROR not mathcing server or client ID. Retrying to register\n");
+                send_listenig = mountTcp(DATA_REJ,recv_list.element,"Data didn't match\0");
+                write(allSockets.socket_for_new_accept,&send_listenig,sizeof (send_listenig));
+                thrd_join(threads[0],NULL);
+                change_client_state("NOT_REGISTERED");
+                client.unsucssesful_singUps++;
+                connection();
+
+            }
+            int i = 0;
+            while(i>=5 || strcmp(&arr_elem[i].strElem[0],"\0")!=0){
+                if(strcmp(recv_list.element,arr_elem[i].strElem)==0){
+                    elem = malloc(sizeof arr_elem[i].strElem);
+                    strcpy(elem,arr_elem[i].strElem);
+                    existElem = 1;
+                    break;
+                }else {
+                    i++;
                 }
-            } else if(strcmp(get_state_into_str(recv_list.type),"SET_DATA")==0){
-                int i = 0;
-                int j = 0;
-                while(i>=5 || strcmp(&arr_elem[i].strElem[0],"\0")!=0) {
-                    if (strcmp(recv_list.element, arr_elem[i].strElem) == 0) {
-                        while(strcmp(&arr_elem[i].strElem[j],"\0")!=0){
-                            if(strcmp(&arr_elem[i].strElem[j],"I")==0){
-                                strcpy(arr_elem[i].valElem,recv_list.valor);
-                                send_listenig = mountTcp(DATA_ACK,arr_elem[i].strElem);
-                                write(allSockets.socket_for_new_accept,&send_listenig,sizeof(send_listenig));
-                                if(clientConfiguration.debug==1){
-                                    printf("Setted new value correctly\n");
-                                }
-                                break;
-                            }else{
-                                j++;
+            }
+            if(existElem==0){
+                printf("ELEMENT didn't recognized\n");
+                send_listenig = mountTcp(DATA_NACK,recv_list.element,"Element didn't recognized\0");
+                write(allSockets.socket_for_new_accept,&send_listenig,sizeof (send_listenig));
+            }else {
+                if (strcmp(get_state_into_str(recv_list.type), "GET_DATA") == 0) {
+                    send_listenig = mountTcp(DATA_ACK, arr_elem[i].strElem, NULL);
+                    write(allSockets.socket_for_new_accept, &send_listenig, sizeof(send_listenig));
+                    if (clientConfiguration.debug == 1) {
+                        printf("Sended element correctly\n");
+                    }
+                } else if (strcmp(get_state_into_str(recv_list.type), "SET_DATA") == 0) {
+                    int j = 0;
+                    while (strcmp(&arr_elem[i].strElem[j], "\0") != 0) {
+                        if (strcmp(&arr_elem[i].strElem[j], "I") == 0) {
+                            strcpy(arr_elem[i].valElem, recv_list.valor);
+                            send_listenig = mountTcp(DATA_ACK, arr_elem[i].strElem, NULL);
+                            write(allSockets.socket_for_new_accept, &send_listenig, sizeof(send_listenig));
+                            if (clientConfiguration.debug == 1) {
+                                printf("Setted new value correctly\n");
                             }
-                        }
-                        if(strcmp(arr_elem[i].valElem,recv_list.valor)==0){
                             break;
+                        } else {
+                            j++;
                         }
-                    }else{
-                        i++;
                     }
+                    if (strcmp(arr_elem[i].valElem, recv_list.valor) != 0) {
+                        printf("Element its not an assignable element\n");
+                    }
+                } else {
+                    printf("ERROR package type not recognized");
                 }
-            }else{
-                printf("ERROR package type not recognized");
             }
         }
+
     }
 }
 
 struct TCP listening(){
-
     struct TCP *recvListenignPacket = malloc(sizeof (struct TCP));
 
     listen(allSockets.tcp_listening_socket,5);
@@ -530,7 +537,12 @@ bool checkServerInfo(struct UDP recivedServerPackage){
     return (strcmp(recivedServerPackage.idTransmissor,server.ServerId)==0 &&
             strcmp(recivedServerPackage.idCommunication,server.ServerCommunication)==0);
 }
-struct TCP mountTcp(unsigned char type,char *elemId){
+
+bool checkDataInfoRecivedListening(struct TCP recivedListening){
+    return (strcmp(recivedListening.id_transmisor,server.ServerId)==0 &&
+            strcmp(recivedListening.info,clientConfiguration.clientID)==0);
+}
+struct TCP mountTcp(unsigned char type,char *elemId,char *info){
     struct TCP send_data;
     int i = 0;
 
@@ -542,9 +554,13 @@ struct TCP mountTcp(unsigned char type,char *elemId){
         i++;
     }
     strcpy(send_data.valor,arr_elem[i].valElem);
-    time_t timenow;
-    time(&timenow);
-    strcpy(send_data.info,ctime(&timenow));
+    if(info==NULL){
+        time_t timenow;
+        time(&timenow);
+        strcpy(send_data.info,ctime(&timenow));
+    }else{
+        strcpy(send_data.info,info);
+    }
     return send_data;
 }
 
@@ -560,10 +576,9 @@ void commandSystem(){
     char *split;
     int i;
     while(1){
-        while(strcmp(client_state,"SEND_ALIVE")==0) {
-            i = 0;
-            fgets((char*)buffIn,BUFFSIZE,stdin);
-
+        i = 0;
+        fgets((char*)buffIn,BUFFSIZE,stdin);
+        if(strcmp(client_state,"SEND_ALIVE")==0){
             char *c = strchr(buffIn, '\n');
             if (c) {
                 *c = '\0';
@@ -619,6 +634,7 @@ void commandSystem(){
                 }
             }else if(strcmp(buffIn,"quit")==0){
                 close(allSockets.tcp_socket);
+                close(allSockets.tcp_listening_socket);
                 exit(-1);
             }else{
                 printf("Command ERROR try again\n");
@@ -629,9 +645,27 @@ void commandSystem(){
     }
 }
 void command_send(char *elemId){
-    struct TCP send_package = mountTcp(SEND_DATA,elemId);
+    struct TCP send_package = mountTcp(SEND_DATA,elemId,NULL);
     send_package_tcp(send_package);
     struct TCP recived_package = recive_package_TCP(m);
+    if(strcmp(get_state_into_str(recived_package.type),"DATA_ACK")==0){
+        if(clientConfiguration.debug==1){
+            printf("DATA_ACK recived correclty\n");
+        }
+    }else if(strcmp(get_state_into_str(recived_package.type),"DATA_NACK")==0){
+        printf("Recived DATA_NACK, some error with data\n");
+    }else if(strcmp(get_state_into_str(recived_package.type),"DATA_REJ")==0){
+        printf("ERROR not matching data, retrying register\n");
+        thrd_join(threads[0],NULL);
+        change_client_state("NOT_REGISTERED");
+        client.unsucssesful_singUps++;
+        connection();
+    }else{
+        printf("ERROR recived packet response from server");// HAcer lo mismo q DATA_NACK
+    }
+    if(clientConfiguration.debug==1){
+        printf("Closing connecion TCP for the paquet SEND\n");
+    }
 }
 
 struct TCP recive_package_TCP(int max_timeout){
@@ -644,9 +678,13 @@ struct TCP recive_package_TCP(int max_timeout){
         printf("ERROR");
     }
     char *buf = malloc(sizeof(struct TCP));
-    read(allSockets.tcp_socket,buf,sizeof (struct TCP));
-    recivedPackage = (struct TCP *) buf;
-    return *recivedPackage;
+    if(read(allSockets.tcp_socket,buf,sizeof (struct TCP))<0){
+        recivedPackage->type=ERROR;
+        return *recivedPackage;
+    }else{
+        recivedPackage = (struct TCP *) buf;
+        return *recivedPackage;
+    }
 }
 
 void setup_tcp_socket(){
@@ -677,7 +715,7 @@ void setup_socket_for_listening(){
         printf("Socket create wrong");
     }
     memset(&allSockets.tcp_listening_addr_server,0,sizeof (struct sockaddr_in));
-    allSockets.tcp_listening_addr_server.sin_addr.s_addr = htonl(INADDR_ANY); // <-- AQUI FALLA
+    allSockets.tcp_listening_addr_server.sin_addr.s_addr = htonl(INADDR_ANY);
     allSockets.tcp_listening_addr_server.sin_port = htons(atoi(clientConfiguration.local_TCP_port));
     allSockets.tcp_listening_addr_server.sin_family=AF_INET;
 
