@@ -9,9 +9,8 @@ debug = False
 
 class Socket:
     def __init__(self):
-        self.udp_socket = None
-
-        self.tcp_socket = None
+        self.udp_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+        self.tcp_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
 
 class Client:
     def __init__(self):
@@ -74,12 +73,11 @@ def readClients():
         print("Read clients correctly")
 
 def openUdpTcpSocket():
-    global server_sockets
+    global server_sockets, serverConfigure
+    serverConfigure: ConfigFile
     server_sockets = Socket()
-    server_sockets.udp_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
     server_sockets.udp_socket.bind(("",int(serverConfigure.UDP_port)))
 
-    server_sockets.tcp_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
     server_sockets.tcp_socket.bind(("",int(serverConfigure.TCP_port)))
     server_sockets.tcp_socket.listen(5)
 
@@ -89,8 +87,7 @@ def udpService():
     if debug:
         print("UDP socket waiting")
     while True:
-        (data , (ip , port)) = server_sockets.udp_socket.recvfrom(84)
-        pass
+        (data,(id_client,port_client)) = server_sockets.udp_socket.recvfrom(84)
 
 
 if __name__ == "__main__":
