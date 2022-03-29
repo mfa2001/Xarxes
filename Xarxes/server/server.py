@@ -89,7 +89,8 @@ def udpService():
     if debug:
         print("UDP socket waiting")
     while True:
-        #server_sockets.udp_socket
+        (data , (ip , port)) = server_sockets.udp_socket.recvfrom(84)
+        pass
 
 
 if __name__ == "__main__":
