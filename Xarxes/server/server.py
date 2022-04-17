@@ -39,7 +39,7 @@ def main():
         readClients()
         setupSockets()
         service()
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, SystemExit):
         end_threads = True
 
 
@@ -97,6 +97,7 @@ def setupSockets():
     server_sockets.udp_socket.bind(('',int(serverConfigure.UDP_port)))
 
     server_sockets.tcp_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+    server_sockets.tcp_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR,1)
     server_sockets.tcp_socket.bind(('',int(serverConfigure.TCP_port)))
     server_sockets.tcp_socket.listen(5)
 
@@ -187,10 +188,11 @@ def get_info_packet(client):
             changeClientState(client,"REGISTERED")
             client.tcp_port = info['datos'].split(',')[0]
             client.elements = info['datos'].split(',')[1]
-            infoAckPaquet = mountPDU(client,client.tcp_port,0xa5)
+            infoAckPaquet = mountPDU(client,serverConfigure.TCP_port,0xa5)
             ClientInfoSocket.sendto(infoAckPaquet,adress)
         ClientInfoSocket.close()
         exit()
+
 
 
 def changeClientState(client,newState):
@@ -213,20 +215,8 @@ def send_alive():
                 packet_lost = 0
             elif client.alive_not_consecutive >= 3:
                 changeClientState(client,"DISCONNECTED")
-        '''
-        (data_alive,addres_alive) = client.udp_socket.recvfrom(84)
-        unpacked_send = checkCorrectPackage(data_alive,"SEND_ALIVE",client.id_communication)
-        if unpacked_send == 0:
-            pass
-            #error checking and send packet with error
-        elif client.state == "REGISTERED":
-            changeClientState(client,"SEND_ALIVE")
-            packet_alive = mountPDU(client,client.id,0xb0)
-            client.udp_socket.sendto(packet_alive,addres_alive)
-        elif client.state == "SEND_ALIVE":
-            packet_alive = mountPDU(client, client.id, 0xb0)
-            client.udp_socket.sendto(packet_alive, addres_alive)
-            '''
+    else:
+        server_sockets.tcp_socket.close()
 
 
 def mountPDU(client,datos,type):
@@ -279,6 +269,7 @@ def getStringByType(type):
 
 
 def tcp_loop():
+    global server_sockets
     while True:
         new_sock, ip_port = server_sockets.tcp_socket.accept()
         recived_tcp_unpacked = new_sock.recv(84)
